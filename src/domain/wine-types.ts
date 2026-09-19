@@ -10,6 +10,17 @@ export const ANALYSIS_STATUSES = [
 ] as const;
 export type AnalysisStatus = (typeof ANALYSIS_STATUSES)[number];
 
+export const ANALYSIS_ERROR_CODES = [
+  "labelUnreadable",
+  "invalidResponse",
+  "unavailable",
+  "missingApiKey",
+  "invalidApiKey",
+  "budgetExceeded",
+  "unexpected",
+] as const;
+export type AnalysisErrorCode = (typeof ANALYSIS_ERROR_CODES)[number];
+
 export const DRINKING_MATURITIES = [
   "tooYoung",
   "ready",

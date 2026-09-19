@@ -1,5 +1,6 @@
 import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type {
+  AnalysisErrorCode,
   AnalysisStatus,
   CriticScore,
   ResearchConfidence,
@@ -52,7 +53,7 @@ export const wines = sqliteTable("wines", {
   analyzedAt: timestamp("analyzed_at"),
 
   analysisStatus: text("analysis_status").$type<AnalysisStatus>().notNull().default("pending"),
-  analysisError: text("analysis_error"),
+  analysisError: text("analysis_error").$type<AnalysisErrorCode>(),
   duplicateOfWineId: integer("duplicate_of_wine_id"),
 
   createdAt: timestamp("created_at")

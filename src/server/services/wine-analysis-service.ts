@@ -1,7 +1,11 @@
-import type { AnalysisStatus } from "@/domain/wine-types";
+import type { AnalysisErrorCode, AnalysisStatus } from "@/domain/wine-types";
 import type { WineRecord } from "../database/schema";
 import type { PhotoStorage } from "../photo-storage/photo-storage";
-import type { WineChanges, WineRepository } from "../repository/wine-repository";
+import {
+  RecordNotFoundError,
+  type WineChanges,
+  type WineRepository,
+} from "../repository/wine-repository";
 import type { WineResearch } from "../wine-intelligence/schemas";
 import {
   WineIntelligenceError,
@@ -19,7 +23,7 @@ export interface WineAnalysisDependencies {
   aiBudgetGuard: AiBudgetGuard;
 }
 
-const RETRYABLE_ERROR_CODES = new Set([
+const RETRYABLE_ERROR_CODES: ReadonlySet<AnalysisErrorCode> = new Set([
   "unavailable",
   "missingApiKey",
   "invalidApiKey",
@@ -28,7 +32,7 @@ const RETRYABLE_ERROR_CODES = new Set([
 
 class LabelUnreadableError extends Error {}
 
-function toErrorCode(error: unknown): string {
+function toErrorCode(error: unknown): AnalysisErrorCode {
   if (error instanceof LabelUnreadableError) return "labelUnreadable";
   if (error instanceof AiBudgetExceededError) return "budgetExceeded";
   if (error instanceof WineIntelligenceError) return error.reason;
@@ -120,9 +124,14 @@ export class WineAnalysisService {
 
     let nextStatus: AnalysisStatus = RETRYABLE_ERROR_CODES.has(errorCode) ? "pending" : "failed";
     if (isAlreadyComplete) nextStatus = "complete";
-    this.dependencies.wineRepository.updateWine(wineId, {
-      analysisStatus: nextStatus,
-      analysisError: errorCode,
-    });
+    try {
+      this.dependencies.wineRepository.updateWine(wineId, {
+        analysisStatus: nextStatus,
+        analysisError: errorCode,
+      });
+    } catch (updateError) {
+      if (updateError instanceof RecordNotFoundError) return;
+      console.error("Failed to record wine analysis failure", updateError);
+    }
   }
 }

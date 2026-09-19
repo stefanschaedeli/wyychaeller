@@ -157,4 +157,36 @@ describe("WineAnalysisService.analyzeWine", () => {
       bottleCount: 6,
     });
   });
+
+  it("re-rates a complete wine and refreshes fields when research succeeds", async () => {
+    const wineId = await createWineWithPhoto();
+    await service.analyzeWine(wineId, "full");
+    wineRepository.updateWine(wineId, { analysisStatus: "complete", bottleCount: 6 });
+    const researchResult = await new RecordedWineIntelligence().researchWine();
+    vi.spyOn(wineIntelligence, "researchWine").mockResolvedValue({
+      ...researchResult,
+      value: { ...researchResult.value, aggregateScore: 97 },
+    });
+
+    await service.analyzeWine(wineId, "researchOnly");
+
+    expect(wineRepository.findWineById(wineId)).toMatchObject({
+      analysisStatus: "complete",
+      analysisError: null,
+      aggregateScore: 97,
+      bottleCount: 6,
+    });
+  });
+
+  it("does not reject when the wine is deleted while analysis is running", async () => {
+    const wineId = await createWineWithPhoto();
+    vi.spyOn(wineIntelligence, "analyzeLabel").mockImplementation(async () => {
+      wineRepository.deleteWine(wineId);
+      throw new WineIntelligenceError("unavailable");
+    });
+
+    await expect(service.analyzeWine(wineId, "full")).resolves.toBeUndefined();
+
+    expect(wineRepository.findWineById(wineId)).toBeNull();
+  });
 });
