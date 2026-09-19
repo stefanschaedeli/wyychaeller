@@ -5,7 +5,7 @@ services:
     container_name: weinkeller
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${WEINKELLER_PORT:-3010}:3000"
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-5}
