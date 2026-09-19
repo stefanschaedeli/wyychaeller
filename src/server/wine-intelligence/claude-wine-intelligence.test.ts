@@ -1,7 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ClaudeWineIntelligence } from "./claude-wine-intelligence";
-import { WineIntelligenceError, type WineIdentity } from "./wine-intelligence";
+import {
+  WineIntelligenceError,
+  type CellarWineSummary,
+  type WineIdentity,
+} from "./wine-intelligence";
 
 const parse = vi.fn();
 const create = vi.fn();
@@ -100,6 +104,51 @@ describe("ClaudeWineIntelligence.researchWine", () => {
     expect(parse.mock.calls[0][0].messages[0].content).toContain("Falstaff 95");
     expect(result.value.criticScores[0].url).toBeNull();
     expect(result.usage).toEqual({ inputTokens: 300, outputTokens: 60 });
+  });
+
+  it("fails as unavailable when the search never finishes pausing", async () => {
+    create.mockResolvedValue({ stop_reason: "pause_turn", content: [], usage });
+
+    await expect(intelligence.researchWine(identity)).rejects.toMatchObject({
+      reason: "unavailable",
+    });
+    expect(create).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe("ClaudeWineIntelligence.recommendWinesForDish", () => {
+  const cellarWines: CellarWineSummary[] = [
+    {
+      ...identity,
+      wineId: 1,
+      bottleCount: 2,
+      styleClassification: null,
+      foodPairings: [],
+      drinkingMaturity: "drinkSoon",
+    },
+  ];
+
+  it("sends the dish and cellar, unwraps recommendations, and drops unknown wine ids", async () => {
+    parse.mockResolvedValue({
+      stop_reason: "end_turn",
+      parsed_output: {
+        recommendations: [
+          { wineId: 1, reasoning: "Passt gut.", servingTip: null },
+          { wineId: 999, reasoning: "Unbekannter Wein.", servingTip: null },
+        ],
+      },
+      usage,
+    });
+
+    const result = await intelligence.recommendWinesForDish(
+      "Bistecca alla fiorentina",
+      cellarWines,
+    );
+
+    const request = parse.mock.calls[0][0];
+    expect(request.output_config.effort).toBe("medium");
+    expect(request.messages[0].content).toContain("Bistecca alla fiorentina");
+    expect(result.value).toEqual([{ wineId: 1, reasoning: "Passt gut.", servingTip: null }]);
   });
 });
 

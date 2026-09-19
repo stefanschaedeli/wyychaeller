@@ -15,6 +15,8 @@ const STRUCTURED_REQUEST_ATTEMPTS = 2;
 
 export type ReasoningEffort = "low" | "medium";
 
+const WEB_RESEARCH_EFFORT: ReasoningEffort = "medium";
+
 export interface StructuredRequest<Schema extends z.ZodType> {
   schema: Schema;
   instructions: string;
@@ -62,9 +64,30 @@ export async function requestStructuredOutput<Schema extends z.ZodType>(
     totalUsage = addUsage(totalUsage, readUsage(response.usage));
 
     const isUsable = response.stop_reason !== "refusal" && response.parsed_output !== null;
+    // Safe: guarded by the null check above; the SDK cannot relate its runtime
+    // JSON-schema output to this call's generic Schema, so a cast is unavoidable.
     if (isUsable) return { value: response.parsed_output as z.infer<Schema>, usage: totalUsage };
   }
   throw new WineIntelligenceError("invalidResponse");
+}
+
+function buildResearchTurnMessages(
+  researchPrompt: string,
+  assistantContent: Anthropic.ContentBlockParam[],
+): Anthropic.MessageParam[] {
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: researchPrompt }];
+  if (assistantContent.length > 0) {
+    messages.push({ role: "assistant", content: assistantContent });
+  }
+  return messages;
+}
+
+function extractResearchNotes(assistantContent: Anthropic.ContentBlockParam[]): string {
+  return assistantContent
+    .filter((block): block is Anthropic.TextBlockParam => block.type === "text")
+    .map((block) => block.text)
+    .join("\n")
+    .trim();
 }
 
 /**
@@ -80,19 +103,16 @@ export async function collectWebResearchNotes(
   // ContentBlock (response) and ContentBlockParam (request) are distinct types.
   let assistantContent: Anthropic.ContentBlockParam[] = [];
   let totalUsage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
+  let hasTurnFinished = false;
 
   for (let continuation = 0; continuation <= MAXIMUM_PAUSE_CONTINUATIONS; continuation += 1) {
-    const messages: Anthropic.MessageParam[] = [{ role: "user", content: researchPrompt }];
-    if (assistantContent.length > 0) {
-      messages.push({ role: "assistant", content: assistantContent });
-    }
     const response = await client.messages.create({
       model,
       max_tokens: MAXIMUM_OUTPUT_TOKENS,
       system: WEB_RESEARCH_INSTRUCTIONS,
       tools: [{ type: "web_search_20260209", name: "web_search", max_uses: MAXIMUM_WEB_SEARCHES }],
-      output_config: { effort: "medium" },
-      messages,
+      output_config: { effort: WEB_RESEARCH_EFFORT },
+      messages: buildResearchTurnMessages(researchPrompt, assistantContent),
     });
     totalUsage = addUsage(totalUsage, readUsage(response.usage));
     // A new array, not a push: the previous request's `messages` still references
@@ -103,14 +123,14 @@ export async function collectWebResearchNotes(
     ];
 
     if (response.stop_reason === "refusal") throw new WineIntelligenceError("invalidResponse");
-    if (response.stop_reason !== "pause_turn") break;
+    if (response.stop_reason !== "pause_turn") {
+      hasTurnFinished = true;
+      break;
+    }
   }
+  if (!hasTurnFinished) throw new WineIntelligenceError("unavailable");
 
-  const researchNotes = assistantContent
-    .filter((block): block is Anthropic.TextBlockParam => block.type === "text")
-    .map((block) => block.text)
-    .join("\n")
-    .trim();
+  const researchNotes = extractResearchNotes(assistantContent);
   if (researchNotes === "") throw new WineIntelligenceError("invalidResponse");
   return { value: researchNotes, usage: totalUsage };
 }

@@ -21,7 +21,11 @@ import {
   type LabelReading,
   type WineResearch,
 } from "./schemas";
-import { sanitizeLabelReading, sanitizeWineResearch } from "./sanitize";
+import {
+  sanitizeDishRecommendations,
+  sanitizeLabelReading,
+  sanitizeWineResearch,
+} from "./sanitize";
 import type {
   CellarWineSummary,
   IntelligenceResult,
@@ -92,7 +96,11 @@ export class ClaudeWineIntelligence implements WineIntelligence {
         userContent: buildDishPairingPrompt(dish, cellarWines),
       }),
     );
-    return { value: result.value.recommendations, usage: result.usage };
+    const validWineIds = new Set(cellarWines.map((wine) => wine.wineId));
+    return {
+      value: sanitizeDishRecommendations(result.value.recommendations, validWineIds),
+      usage: result.usage,
+    };
   }
 
   private async guard<T>(operation: () => Promise<T>): Promise<T> {
