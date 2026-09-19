@@ -12,3 +12,12 @@ test("shows the German shell with navigation", async ({ page }) => {
   }
   await expect(page.getByLabel("Etikett fotografieren")).toBeAttached();
 });
+
+test("shows an inviting empty cellar", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "Noch keine Weine" })).toBeVisible();
+  await expect(page.getByLabel("Suche")).toBeVisible();
+  await expect(page.getByLabel("Weintyp")).toBeVisible();
+  await expect(page.getByLabel("Trinkreife")).toBeVisible();
+});

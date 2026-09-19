@@ -1,6 +1,12 @@
 import { DRINK_SOON_WINDOW_YEARS } from "./constants";
 import type { DrinkingMaturity, DrinkingWindow } from "./wine-types";
 
+export const URGENT_MATURITIES: readonly DrinkingMaturity[] = ["overdue", "drinkSoon"];
+
+export function isUrgentMaturity(maturity: DrinkingMaturity): boolean {
+  return URGENT_MATURITIES.includes(maturity);
+}
+
 const URGENCY_RANK: Record<DrinkingMaturity, number> = {
   overdue: 0,
   drinkSoon: 1,

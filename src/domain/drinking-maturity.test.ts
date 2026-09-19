@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { determineDrinkingMaturity, sortByDrinkingUrgency } from "./drinking-maturity";
+import {
+  determineDrinkingMaturity,
+  isUrgentMaturity,
+  sortByDrinkingUrgency,
+} from "./drinking-maturity";
+import type { DrinkingMaturity } from "./wine-types";
 
 const CURRENT_YEAR = 2026;
 
@@ -41,4 +46,19 @@ describe("sortByDrinkingUrgency", () => {
     const wines = [{ drinkFromYear: 2023, drinkUntilYear: 2038 }];
     expect(sortByDrinkingUrgency(wines, CURRENT_YEAR)).not.toBe(wines);
   });
+});
+
+describe("isUrgentMaturity", () => {
+  it.each([
+    ["overdue", true],
+    ["drinkSoon", true],
+    ["ready", false],
+    ["tooYoung", false],
+    ["unknown", false],
+  ] as const satisfies readonly [DrinkingMaturity, boolean][])(
+    "treats %s as urgent: %s",
+    (maturity, expectedIsUrgent) => {
+      expect(isUrgentMaturity(maturity)).toBe(expectedIsUrgent);
+    },
+  );
 });
