@@ -5,7 +5,7 @@ import { enforceAiRateLimit } from "@/server/http/ai-rate-limit";
 import { handleRoute } from "@/server/http/handle-route";
 import { WineListQuerySchema } from "@/server/http/request-schemas";
 import { getCurrentYear, toWineResponse } from "@/server/http/wine-response";
-import { getServiceContainer } from "@/server/service-container";
+import { getServiceContainer, type ServiceContainer } from "@/server/service-container";
 
 export const dynamic = "force-dynamic";
 
@@ -39,17 +39,27 @@ export async function GET(request: Request): Promise<Response> {
   });
 }
 
+async function storeUploadedPhoto(container: ServiceContainer, request: Request): Promise<string> {
+  const formData = await request.formData();
+  const photo = formData.get("photo");
+  if (!(photo instanceof File)) throw new ApiError(400, "invalidPhoto", "Field photo is missing");
+  return container.photoStorage.storeLabelPhoto(Buffer.from(await photo.arrayBuffer()));
+}
+
 export async function POST(request: Request): Promise<Response> {
   return handleRoute(async () => {
     const container = getServiceContainer();
-    enforceAiRateLimit(container);
-    const formData = await request.formData();
-    const photo = formData.get("photo");
-    if (!(photo instanceof File)) throw new ApiError(400, "invalidPhoto", "Field photo is missing");
+    // Validate and store the photo before spending an AI rate-limit token, so a
+    // garbage upload never blocks a real analysis request. If the limit is then
+    // exhausted, remove the photo we just stored so no orphan file is left behind.
+    const photoFileName = await storeUploadedPhoto(container, request);
+    try {
+      enforceAiRateLimit(container);
+    } catch (error) {
+      await container.photoStorage.deleteLabelPhoto(photoFileName);
+      throw error;
+    }
 
-    const photoFileName = await container.photoStorage.storeLabelPhoto(
-      Buffer.from(await photo.arrayBuffer()),
-    );
     const wine = container.wineRepository.createPendingWine(photoFileName);
     container.backgroundTasks.run(container.wineAnalysisService.analyzeWine(wine.id, "full"));
 

@@ -68,6 +68,64 @@ describe("handleRoute", () => {
     expect(result.status).toBe(413);
     expect(result.body.error.code).toBe("photoTooLarge");
   });
+
+  it("recognizes a foreign ApiError by name when it carries a valid status and code", async () => {
+    class ForeignApiError extends Error {
+      readonly status = 409;
+      readonly code = "analysisRunning";
+      constructor() {
+        super("Analysis is already running");
+        this.name = "ApiError";
+      }
+    }
+    const result = await runFailing(new ForeignApiError());
+    expect(result.status).toBe(409);
+    expect(result.body.error.code).toBe("analysisRunning");
+  });
+
+  it("falls back to 500 unexpected for a foreign ApiError with a malformed status", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    class ForeignApiError extends Error {
+      readonly status = "not-a-number";
+      readonly code = "analysisRunning";
+      constructor() {
+        super("Analysis is already running");
+        this.name = "ApiError";
+      }
+    }
+    const result = await runFailing(new ForeignApiError());
+    expect(result.status).toBe(500);
+    expect(result.body.error.code).toBe("unexpected");
+    consoleSpy.mockRestore();
+  });
+
+  it("recognizes a foreign WineIntelligenceError by name with a known reason", async () => {
+    class ForeignWineIntelligenceError extends Error {
+      readonly reason = "invalidResponse";
+      constructor() {
+        super("Wine intelligence failed: invalidResponse");
+        this.name = "WineIntelligenceError";
+      }
+    }
+    const result = await runFailing(new ForeignWineIntelligenceError());
+    expect(result.status).toBe(502);
+    expect(result.body.error.code).toBe("invalidResponse");
+  });
+
+  it("falls back to 500 unexpected for a foreign WineIntelligenceError with an unknown reason", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    class ForeignWineIntelligenceError extends Error {
+      readonly reason = "somethingMadeUp";
+      constructor() {
+        super("Wine intelligence failed: somethingMadeUp");
+        this.name = "WineIntelligenceError";
+      }
+    }
+    const result = await runFailing(new ForeignWineIntelligenceError());
+    expect(result.status).toBe(500);
+    expect(result.body.error.code).toBe("unexpected");
+    consoleSpy.mockRestore();
+  });
 });
 
 describe("parseRecordId", () => {

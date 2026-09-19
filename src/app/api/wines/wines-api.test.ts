@@ -1,5 +1,7 @@
+import { readdir } from "node:fs/promises";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { AI_REQUESTS_PER_MINUTE } from "@/domain/constants";
 import { jsonRequest } from "@/server/testing/json-request";
 import { createTestContainer, type TestContainer } from "@/server/testing/test-container";
 import { POST as startAnalysis } from "./[wineId]/analysis/route";
@@ -30,7 +32,7 @@ function routeContext(wineId: number) {
   return { params: Promise.resolve({ wineId: String(wineId) }) };
 }
 
-async function uploadLabel(): Promise<number> {
+async function buildLabelUploadRequest(): Promise<Request> {
   const imageBytes = await sharp({
     create: { width: 60, height: 80, channels: 3, background: "#f6f1e7" },
   })
@@ -41,7 +43,11 @@ async function uploadLabel(): Promise<number> {
     "photo",
     new File([new Uint8Array(imageBytes)], "label.jpg", { type: "image/jpeg" }),
   );
-  const response = await uploadWine(new Request(BASE_URL, { method: "POST", body: formData }));
+  return new Request(BASE_URL, { method: "POST", body: formData });
+}
+
+async function uploadLabel(): Promise<number> {
+  const response = await uploadWine(await buildLabelUploadRequest());
   expect(response.status).toBe(201);
   const { wine } = await response.json();
   await testContainer.container.backgroundTasks.waitUntilIdle();
@@ -80,12 +86,17 @@ describe("wine capture flow", () => {
     ).toHaveLength(1);
   });
 
-  it("rejects uploads that are not images", async () => {
+  it("rejects uploads that are not images without spending the AI rate limit", async () => {
     const formData = new FormData();
     formData.set("photo", new File(["not an image"], "evil.jpg", { type: "image/jpeg" }));
     const response = await uploadWine(new Request(BASE_URL, { method: "POST", body: formData }));
     expect(response.status).toBe(400);
     expect((await response.json()).error.code).toBe("invalidPhoto");
+
+    // A garbage upload never reaches the AI, so it must not drain the shared budget.
+    for (let attempt = 0; attempt < AI_REQUESTS_PER_MINUTE; attempt += 1) {
+      expect(testContainer.container.aiRateLimiter.tryConsume("ai")).toBe(true);
+    }
   });
 
   it("rejects confirmation with unknown fields or an invalid bottle count", async () => {
@@ -101,6 +112,20 @@ describe("wine capture flow", () => {
       );
       expect(response.status).toBe(400);
     }
+  });
+
+  it("rejects an upload once the AI rate limit is exhausted, leaving no orphan file", async () => {
+    for (let attempt = 0; attempt < AI_REQUESTS_PER_MINUTE; attempt += 1) {
+      testContainer.container.aiRateLimiter.tryConsume("ai");
+    }
+
+    const response = await uploadWine(await buildLabelUploadRequest());
+    expect(response.status).toBe(429);
+    expect((await response.json()).error.code).toBe("rateLimited");
+
+    expect(await readdir(testContainer.photoDirectory)).toHaveLength(0);
+    const listed = await (await listWines(new Request(BASE_URL))).json();
+    expect(listed.wines).toHaveLength(0);
   });
 
   it("offers a merge for duplicates and adds the bottles to the existing wine", async () => {

@@ -11,6 +11,7 @@ import { RecordedWineIntelligence } from "../wine-intelligence/recorded-wine-int
 
 export interface TestContainer {
   container: ServiceContainer;
+  photoDirectory: string;
   cleanUp: () => Promise<void>;
 }
 
@@ -27,6 +28,7 @@ export async function createTestContainer(): Promise<TestContainer> {
 
   return {
     container,
+    photoDirectory,
     cleanUp: async () => {
       await container.backgroundTasks.waitUntilIdle();
       setServiceContainerForTesting(null);

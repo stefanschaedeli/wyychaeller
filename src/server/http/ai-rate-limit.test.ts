@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ServiceContainer } from "../service-container";
 import { RateLimiter } from "./rate-limiter";
 import { ApiError } from "./api-error";
 import { enforceAiRateLimit } from "./ai-rate-limit";
 
-function containerWithLimiter(aiRateLimiter: RateLimiter): ServiceContainer {
-  return { aiRateLimiter } as ServiceContainer;
+function containerWithLimiter(aiRateLimiter: RateLimiter) {
+  return { aiRateLimiter };
 }
 
 describe("enforceAiRateLimit", () => {

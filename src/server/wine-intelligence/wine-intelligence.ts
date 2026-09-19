@@ -35,8 +35,13 @@ export interface CellarWineSummary extends WineIdentity {
   drinkingMaturity: DrinkingMaturity;
 }
 
-export type WineIntelligenceErrorReason =
-  "missingApiKey" | "invalidApiKey" | "unavailable" | "invalidResponse";
+export const WINE_INTELLIGENCE_ERROR_REASONS = [
+  "missingApiKey",
+  "invalidApiKey",
+  "unavailable",
+  "invalidResponse",
+] as const;
+export type WineIntelligenceErrorReason = (typeof WINE_INTELLIGENCE_ERROR_REASONS)[number];
 
 export class WineIntelligenceError extends Error {
   constructor(readonly reason: WineIntelligenceErrorReason) {
