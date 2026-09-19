@@ -41,6 +41,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   identityMissing: "Bitte gib mindestens Weingut oder Weinname ein.",
   analysisRunning: "Die Analyse läuft bereits.",
   notFound: "Dieser Eintrag existiert nicht mehr.",
+  isDuplicate: "Dieser Wein ist schon im Keller. Erhöhe stattdessen den Bestand.",
+  notAwaitingConfirmation:
+    "Dieser Wein wartet nicht mehr auf eine Bestätigung. Lade die Seite neu.",
+  notADuplicate: "Dieser Wein ist kein Duplikat und kann nicht zusammengeführt werden.",
 };
 
 export function describeError(errorCode: string): string {
