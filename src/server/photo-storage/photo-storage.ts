@@ -22,6 +22,11 @@ const ACCEPTED_IMAGE_FORMATS = new Set(["jpeg", "png", "webp"]);
 const GENERATED_FILE_NAME_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$/;
 
+/** The single source of truth for a valid generated photo file name. Routes validate with this. */
+export function isGeneratedPhotoFileName(fileName: string): boolean {
+  return GENERATED_FILE_NAME_PATTERN.test(fileName);
+}
+
 export class PhotoStorage {
   constructor(private readonly photoDirectory: string) {}
 
@@ -67,7 +72,7 @@ export class PhotoStorage {
   }
 
   private resolveSafePath(fileName: string): string {
-    if (!GENERATED_FILE_NAME_PATTERN.test(fileName)) {
+    if (!isGeneratedPhotoFileName(fileName)) {
       throw new InvalidPhotoError("invalidFileName");
     }
     return path.join(this.photoDirectory, fileName);
