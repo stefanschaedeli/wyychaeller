@@ -51,6 +51,23 @@ describe("handleRoute", () => {
     expect(JSON.stringify(result.body)).not.toContain("secret");
     consoleSpy.mockRestore();
   });
+
+  // Turbopack production builds can duplicate a class across route chunks
+  // (https://github.com/vercel/next.js/issues/89192), so an error thrown from a
+  // different chunk can fail `instanceof` even though it is "the same" error type.
+  // This simulates that: same name and shape, but not the real class.
+  it("recognizes known errors by name, not by class identity", async () => {
+    class ForeignInvalidPhotoError extends Error {
+      readonly reason = "tooLarge";
+      constructor() {
+        super("Invalid photo: tooLarge");
+        this.name = "InvalidPhotoError";
+      }
+    }
+    const result = await runFailing(new ForeignInvalidPhotoError());
+    expect(result.status).toBe(413);
+    expect(result.body.error.code).toBe("photoTooLarge");
+  });
 });
 
 describe("parseRecordId", () => {
