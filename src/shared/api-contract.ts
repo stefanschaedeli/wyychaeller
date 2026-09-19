@@ -81,3 +81,39 @@ export interface SettingsResponse {
 export interface ApiErrorBody {
   error: { code: string; message: string };
 }
+
+export interface WineIdentityRequestFields {
+  producer: string | null;
+  name: string | null;
+  vintage: number | null;
+  country: string | null;
+  region: string | null;
+  appellation: string | null;
+  grapeVarieties: string[];
+  wineType: WineType | null;
+}
+
+export interface WineConfirmationRequest extends WineIdentityRequestFields {
+  bottleCount: number;
+  storageLocation: string | null;
+  purchasePricePerBottle: number | null;
+}
+
+export type WineEditRequest = Partial<
+  WineConfirmationRequest & { drinkFromYear: number | null; drinkUntilYear: number | null }
+>;
+
+export interface TastingRequest {
+  tastedOn: string;
+  starRating: number | null;
+  tastingNote: string | null;
+  occasionOrDish: string | null;
+}
+
+export interface WineListQuery {
+  search?: string;
+  wineType?: WineType;
+  maturity?: DrinkingMaturity;
+  includeEmpty?: boolean;
+  sort?: "newest" | "urgency";
+}
