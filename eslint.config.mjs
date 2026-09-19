@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
       "no-console": ["error", { allow: ["error", "warn"] }],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-non-null-assertion": "error",
+      "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
       "@typescript-eslint/naming-convention": [
         "error",
         {
