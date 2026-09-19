@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-paper: #f6f1e7;
+  --color-card: #fffdf8;
+  --color-ink: #2a2622;
+  --color-ink-muted: #6b6259;
+  --color-line: #d9d0c0;
+  --color-bordeaux: #7b2d3a;
+  --color-bordeaux-dark: #5f212c;
+  --color-gold: #b79b6c;
+  --color-alert: #9a3b12;
+
+  --font-serif: var(--font-garamond), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    @apply bg-paper text-ink font-serif text-[1.0625rem] leading-relaxed antialiased;
+  }
+  h1 {
+    @apply text-3xl italic font-normal leading-tight;
+  }
+  h2 {
+    @apply text-xl italic font-normal;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-bordeaux;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .eyebrow {
+    @apply font-sans text-[0.6875rem] uppercase tracking-[0.14em] text-bordeaux;
+  }
+  .card {
+    @apply bg-card border border-ink rounded-xs p-4;
+  }
+  .pill {
+    @apply inline-flex items-center font-sans text-xs border border-bordeaux text-bordeaux rounded-full px-2.5 py-0.5;
+  }
+  .button-primary {
+    @apply inline-flex items-center justify-center min-h-11 px-5 bg-bordeaux text-paper font-sans text-xs uppercase tracking-[0.1em] rounded-xs transition-colors hover:bg-bordeaux-dark disabled:opacity-50;
+  }
+  .button-ghost {
+    @apply inline-flex items-center justify-center min-h-11 px-5 border border-bordeaux text-bordeaux font-sans text-xs uppercase tracking-[0.1em] rounded-xs transition-colors hover:bg-bordeaux hover:text-paper disabled:opacity-50;
+  }
+  .field-label {
+    @apply block font-sans text-xs text-ink-muted mb-1;
+  }
+  .field-input {
+    @apply w-full min-h-11 bg-card border border-line rounded-xs px-3 font-serif text-base text-ink focus:border-bordeaux;
+  }
 }

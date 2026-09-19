@@ -47,3 +47,8 @@ node_modules/
 .env.local
 data/
 .DS_Store
+
+# playwright
+.e2e-data/
+test-results/
+playwright-report/

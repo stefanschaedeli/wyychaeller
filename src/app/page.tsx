@@ -1,3 +1,5 @@
-export default function HomePage() {
-  return <main>Weinkeller</main>;
+import { PageHeader } from "@/components/layout/page-header";
+
+export default function CellarPage() {
+  return <PageHeader eyebrow="Mein Keller" title="Guten Abend" />;
 }
