@@ -1,5 +1,11 @@
 FROM node:22-bookworm-slim AS dependencies
 WORKDIR /app
+# better-sqlite3 ships a prebuilt binary for this platform, but npm still runs
+# node-gyp's configure step before it can detect and reuse that prebuild, and
+# configure fails without Python. python3/make/g++ satisfy that step only; no
+# compilation actually happens because the prebuild is used.
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 
