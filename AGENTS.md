@@ -18,6 +18,18 @@ Spec and implementation plans live under `docs/superpowers/` (`docs/superpowers/
 - `npm run deploy:local` — build and run the app locally in Docker, then wait for it to become healthy.
 - `WINE_INTELLIGENCE_MODE=recorded npm run deploy:local` — same, but with recorded AI answers instead of real API calls (no cost).
 
+## Versioning, commits and releases
+
+Repository: `github.com/stefanschaedeli/wyychaeller` (private), default branch `main`.
+
+- Versions are `MAJOR.MINOR.PATCH`. The agent picks the level from what the session changed:
+  - PATCH — fixes only (bugs, wording, docs, dependency updates), no new behaviour.
+  - MINOR — new, backwards-compatible features or screens.
+  - MAJOR — only when the user asks for a major release, or when existing data or the NAS installation would need manual migration.
+- At the end of a work session: write the commit message from the session summary (conventional subject line such as `feat: …` or `fix: …`, then a short body saying what changed and why), without asking the user to word it.
+- A release bumps the version in `package.json`, `package-lock.json`, `docker-compose.nas.yml` and the archive name in `README.md`, adds a section to `CHANGELOG.md`, then commits, tags `vX.Y.Z` and pushes `main` with the tag.
+- Never commit `.env`, `data/` or `dist/`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
