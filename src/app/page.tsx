@@ -8,14 +8,10 @@ import { ErrorNotice } from "@/components/shared/error-notice";
 import { CellarFilters } from "@/components/wine/cellar-filters";
 import { WineList } from "@/components/wine/wine-list";
 import type { DrinkingMaturity, WineType } from "@/domain/wine-types";
+import { hasRunningAnalysis } from "@/lib/analysis-polling";
 import { apiClient } from "@/lib/api-client";
 import { formatBottleCount } from "@/lib/german-labels";
 import { ANALYSIS_POLL_INTERVAL_MILLISECONDS, useApiResource } from "@/lib/use-api-resource";
-import type { WineResponse } from "@/shared/api-contract";
-
-function hasRunningAnalysis(result: { wines: WineResponse[] }): boolean {
-  return result.wines.some((wine) => ["pending", "analyzing"].includes(wine.analysisStatus));
-}
 
 function DrinkSoonTeaser() {
   const summary = useApiResource(useCallback(() => apiClient.getCellarSummary(), []));

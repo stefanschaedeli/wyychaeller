@@ -1,20 +1,28 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { CaptureButton } from "@/components/capture/capture-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { WineList } from "@/components/wine/wine-list";
+import { hasRunningAnalysis } from "@/lib/analysis-polling";
 import { apiClient } from "@/lib/api-client";
 import { ANALYSIS_POLL_INTERVAL_MILLISECONDS, useApiResource } from "@/lib/use-api-resource";
 import { usePhotoUpload } from "@/lib/use-photo-upload";
+import { subscribeToWineUploaded } from "@/lib/wine-upload-events";
 
 export default function CapturePage() {
   const loadWines = useCallback(() => apiClient.listWines({ includeEmpty: true }), []);
+  // Polling stops once no wine is pending or analyzing; uploading a new photo (from this
+  // page's own button or from the navigation button on any page) calls reload() below,
+  // which restarts polling because the freshly created wine is pending.
   const wineList = useApiResource(loadWines, {
     pollIntervalMilliseconds: ANALYSIS_POLL_INTERVAL_MILLISECONDS,
+    shouldPoll: hasRunningAnalysis,
   });
   const photoUpload = usePhotoUpload(wineList.reload);
+
+  useEffect(() => subscribeToWineUploaded(wineList.reload), [wineList.reload]);
 
   const winesInCapture = (wineList.data?.wines ?? []).filter(
     (wine) => wine.analysisStatus !== "complete",
