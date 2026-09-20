@@ -58,12 +58,11 @@ WINE_INTELLIGENCE_MODE=recorded npm run deploy:local
 
 1. CPU-Architektur prüfen: Systemsteuerung → Info-Center, oder per SSH `uname -m` (`x86_64` → `amd64`, `aarch64` → `arm64`).
 2. Auf dem Mac: `npm run image:nas` (für ARM: `bash scripts/build-nas-image.sh arm64`).
-3. File Station: Ordner `/docker/weinkeller` und darin `data` anlegen. `dist/weinkeller-1.0.0-amd64.tar.gz` und `docker-compose.nas.yml` hochladen.
+3. File Station: Ordner `/docker/weinkeller` und darin `data` anlegen. `dist/weinkeller-1.0.0-amd64.tar.gz`, `docker-compose.nas.yml` und eine Datei `.env` mit der Zeile `ANTHROPIC_API_KEY=…` hochladen — die drei Dateien müssen nebeneinander in `/docker/weinkeller` liegen. Ohne echten API-Schlüssel funktioniert die App auch im kostenlosen Demo-Modus: dazu in derselben `.env` zusätzlich `WINE_INTELLIGENCE_MODE=recorded` eintragen.
 4. Schreibrecht für den Container (läuft als Benutzer-ID 1000): per SSH `sudo chown -R 1000:1000 /volume1/docker/weinkeller/data`.
-5. Im Ordner eine Datei `.env` mit der Zeile `ANTHROPIC_API_KEY=…` anlegen.
-6. Container Manager → Image → Hinzufügen → Aus Datei → Archiv wählen.
-7. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten.
-8. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
+5. Container Manager → Image → Hinzufügen → Aus Datei → Archiv wählen.
+6. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten.
+7. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
 
 ## 5. Hinweis zur Installation als App
 
@@ -94,6 +93,7 @@ Neues Archiv bauen, importieren, in `docker-compose.nas.yml` die Version anpasse
 - `npm run verify` — Format, Lint, Typprüfung, Tests und die Playwright-Journey (Playwright braucht einen freien Port 3100).
 - `npm run deploy:local` — lokal bauen und starten, siehe Abschnitt 3.
 - Spezifikation und Pläne liegen unter `docs/superpowers/`.
+- `npm run verify` prüft `npm audit` nur ab Stufe `high` (`--audit-level=high`), bewusst so eingestellt. Ein bekannter moderater Befund (`drizzle-kit` → `esbuild`, nur im Entwicklungsserver, GHSA-67mh-4wv8-2f99) betrifft ausschliesslich `npm run database:generate` während der Entwicklung und ist nicht im Laufzeit-Image enthalten; er wird bewusst akzeptiert.
 
 Qualitätsregeln (siehe Spezifikation Abschnitt 8):
 
