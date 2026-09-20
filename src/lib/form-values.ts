@@ -26,3 +26,9 @@ export function toNullableText(text: string): string | null {
   const trimmedText = text.trim();
   return trimmedText === "" ? null : trimmedText;
 }
+
+/** Parses a required bottle count; returns null when it is not an integer or below `minimum`. */
+export function parseBottleCount(text: string, minimum: number): number | null {
+  const parsedCount = parseOptionalInteger(text);
+  return parsedCount !== null && parsedCount >= minimum ? parsedCount : null;
+}

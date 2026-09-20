@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  parseBottleCount,
   parseCommaSeparatedList,
   parseOptionalInteger,
   parseOptionalNumber,
@@ -32,5 +33,13 @@ describe("form values", () => {
     expect(toNullableText("  Regal 2 ")).toBe("Regal 2");
     expect(toNullableText("   ")).toBeNull();
     expect(toNullableText("")).toBeNull();
+  });
+
+  it("parses a bottle count that meets the minimum", () => {
+    expect(parseBottleCount("6", 1)).toBe(6);
+    expect(parseBottleCount("0", 1)).toBeNull();
+    expect(parseBottleCount("0", 0)).toBe(0);
+    expect(parseBottleCount("1.5", 1)).toBeNull();
+    expect(parseBottleCount("", 1)).toBeNull();
   });
 });

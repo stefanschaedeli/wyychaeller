@@ -15,7 +15,12 @@ export default defineConfig({
     locale: "de-CH",
   },
   webServer: {
-    command: `npx next dev --port ${END_TO_END_PORT}`,
+    // `rm` runs synchronously before `next dev` starts, so the server's own startup
+    // hook (src/instrumentation.ts) never races globalSetup's cleanup of the same
+    // directory: Playwright starts globalSetup and webServer concurrently, and a
+    // separate `rm` in globalSetup could delete the freshly created photo folder
+    // out from under the just-started server.
+    command: `rm -rf ./.e2e-data && npx next dev --port ${END_TO_END_PORT}`,
     url: `http://localhost:${END_TO_END_PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 120_000,
