@@ -75,3 +75,7 @@ export function formatCurrency(amount: number, currency: string): string {
 export function formatBottleCount(bottleCount: number): string {
   return bottleCount === 1 ? "1 Flasche" : `${bottleCount} Flaschen`;
 }
+
+export function formatWineCount(wineCount: number): string {
+  return wineCount === 1 ? "1 Wein" : `${wineCount} Weinen`;
+}

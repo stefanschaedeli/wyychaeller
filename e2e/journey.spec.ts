@@ -103,3 +103,37 @@ test("recommends wines for a dish and reuses the stored answer", async ({ page }
   await page.getByRole("button", { name: "Rindsfilet mit Morcheln" }).click();
   await expect(page.getByText("Gespeicherte Antwort, ohne KI-Kosten")).toBeVisible();
 });
+
+test("shows cellar value, AI usage and tasting history", async ({ page }) => {
+  await page.goto("/more");
+  await expect(page.getByText("5 Flaschen in 1 Wein")).toBeVisible();
+  await expect(page.getByText(/Einkaufswert.*475/)).toBeVisible();
+  await expect(page.getByText(/KI-Aufrufe diesen Monat: \d+ von 300/)).toBeVisible();
+
+  await page.getByRole("link", { name: "Verkostungen" }).click();
+  await expect(page.getByText("Dunkle Kirsche, sehr lang.")).toBeVisible();
+});
+
+test("saves settings", async ({ page }) => {
+  await page.goto("/more/settings");
+  await page.getByLabel("Monatliche Obergrenze für KI-Aufrufe").fill("120");
+  await page.getByRole("button", { name: "Einstellungen speichern" }).click();
+  await expect(page.getByText("Gespeichert")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByLabel("Monatliche Obergrenze für KI-Aufrufe")).toHaveValue("120");
+});
+
+test("recognises a wine that is already in the cellar and merges the bottles", async ({ page }) => {
+  await page.goto("/capture");
+  await page.getByLabel("Etikett fotografieren").first().setInputFiles(LABEL_FIXTURE);
+  const captureEntry = page.getByRole("link", { name: /Tignanello 2018/ });
+  await expect(captureEntry).toContainText("bitte bestätigen", { timeout: 15_000 });
+  await captureEntry.click();
+
+  await expect(page.getByRole("heading", { name: "Schon im Keller" })).toBeVisible();
+  await page.getByLabel("Zusätzliche Flaschen").fill("3");
+  await page.getByRole("button", { name: "Bestand erhöhen" }).click();
+
+  await expect(page.getByText("8 Flaschen")).toBeVisible();
+});

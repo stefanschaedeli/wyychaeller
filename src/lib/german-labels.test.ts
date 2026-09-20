@@ -4,6 +4,7 @@ import {
   describeError,
   formatBottleCount,
   formatCurrency,
+  formatWineCount,
   formatWineOrigin,
   formatWineTitle,
 } from "./german-labels";
@@ -61,6 +62,11 @@ describe("german labels", () => {
     expect(formatted).toMatch(/1.?400/);
     expect(formatBottleCount(1)).toBe("1 Flasche");
     expect(formatBottleCount(6)).toBe("6 Flaschen");
+  });
+
+  it("formats wine counts with correct dative plural", () => {
+    expect(formatWineCount(1)).toBe("1 Wein");
+    expect(formatWineCount(3)).toBe("3 Weinen");
   });
 
   it("explains known error codes and falls back for unknown ones", () => {
