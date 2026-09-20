@@ -27,7 +27,8 @@ Repository: `github.com/stefanschaedeli/wyychaeller` (private), default branch `
   - MINOR — new, backwards-compatible features or screens.
   - MAJOR — only when the user asks for a major release, or when existing data or the NAS installation would need manual migration.
 - At the end of a work session: write the commit message from the session summary (conventional subject line such as `feat: …` or `fix: …`, then a short body saying what changed and why), without asking the user to word it.
-- A release bumps the version in `package.json`, `package-lock.json`, `docker-compose.nas.yml` and the archive name in `README.md`, adds a section to `CHANGELOG.md`, then commits, tags `vX.Y.Z` and pushes `main` with the tag.
+- A release bumps the version in `package.json` and `package-lock.json` (`npm version X.Y.Z --no-git-tag-version`), adds a section to `CHANGELOG.md`, then commits, tags `vX.Y.Z` and pushes `main` with the tag.
+- Pushing the tag makes GitHub Actions (`.github/workflows/release-image.yml`) build the amd64 + arm64 image and publish it as `ghcr.io/stefanschaedeli/wyychaeller:X.Y.Z` and `:latest`; the tag must match the `package.json` version. `ci.yml` runs `npm run verify` on every push to `main`.
 - Never commit `.env`, `data/` or `dist/`.
 
 <!-- BEGIN:nextjs-agent-rules -->

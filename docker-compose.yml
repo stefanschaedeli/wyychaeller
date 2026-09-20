@@ -8,7 +8,7 @@ services:
       - "${WEINKELLER_PORT:-3010}:3000"
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-5}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5}
       WINE_INTELLIGENCE_MODE: ${WINE_INTELLIGENCE_MODE:-claude}
     volumes:
       - ./data:/data

@@ -30,10 +30,10 @@ KI-Aufrufe entstehen ausschliesslich bei drei Aktionen: beim Erfassen eines Wein
 
 > Hinweis: Die folgenden Zahlen sind eine Schätzung, keine Messung. Die tatsächlich gemessenen Werte aus einem echten Lauf werden in `docs/real-api-check.md` festgehalten, sobald dieser Check durchgeführt wurde.
 
-Mit dem Standardmodell `claude-opus-5` ist pro erfasstem Wein (Etikett lesen und Websuche-Recherche inklusive Websuche-Gebühr) mit rund 20–40 Rappen zu rechnen. Mit `claude-sonnet-5` liegt der Betrag bei etwa 40 % davon. Eine einzelne Frage nach einem passenden Wein zu einem Gericht kostet deutlich weniger als eine Weinerfassung.
+Mit dem Standardmodell `claude-sonnet-5` ist pro erfasstem Wein (Etikett lesen und Websuche-Recherche inklusive Websuche-Gebühr) mit rund 8–16 Rappen zu rechnen. Mit `claude-opus-5` liegt der Betrag etwa 2,5-mal so hoch (rund 20–40 Rappen). Eine einzelne Frage nach einem passenden Wein zu einem Gericht kostet deutlich weniger als eine Weinerfassung.
 
-- `claude-opus-5` (Standard): beste Erkennung und Recherche.
-- `claude-sonnet-5`: deutlich günstiger, für bekannte Weine meist ausreichend. Umstellen über `CLAUDE_MODEL`.
+- `claude-sonnet-5` (Standard): günstig, für bekannte Weine meist ausreichend.
+- `claude-opus-5`: beste Erkennung und Recherche, auch bei seltenen Weinen. Umstellen über `CLAUDE_MODEL=claude-opus-5` in der `.env`. Bereits erfasste Weine bleiben unverändert; «Neu bewerten» verwendet das jeweils eingestellte Modell.
 - Die monatliche Obergrenze in «Mehr → Einstellungen» schützt vor Überraschungen.
 
 Zum kostenlosen Ausprobieren ohne jeden API-Aufruf steht der Modus `WINE_INTELLIGENCE_MODE=recorded` zur Verfügung (siehe Abschnitt 3): Er liefert aufgezeichnete, realistische Antworten statt echter KI-Aufrufe.
@@ -56,13 +56,18 @@ WINE_INTELLIGENCE_MODE=recorded npm run deploy:local
 
 ## 4. Installation auf dem Synology NAS
 
-1. CPU-Architektur prüfen: Systemsteuerung → Info-Center, oder per SSH `uname -m` (`x86_64` → `amd64`, `aarch64` → `arm64`).
-2. Auf dem Mac: `npm run image:nas` (für ARM: `bash scripts/build-nas-image.sh arm64`).
-3. File Station: Ordner `/docker/weinkeller` und darin `data` anlegen. `dist/weinkeller-1.0.0-amd64.tar.gz`, `docker-compose.nas.yml` und eine Datei `.env` mit der Zeile `ANTHROPIC_API_KEY=…` hochladen — die drei Dateien müssen nebeneinander in `/docker/weinkeller` liegen. Ohne echten API-Schlüssel funktioniert die App auch im kostenlosen Demo-Modus: dazu in derselben `.env` zusätzlich `WINE_INTELLIGENCE_MODE=recorded` eintragen.
+Das Image wird von GitHub Actions bei jedem Versions-Tag gebaut (für Intel/AMD und ARM) und in der privaten Container-Registry dieses Repositorys abgelegt: `ghcr.io/stefanschaedeli/wyychaeller`. Das NAS holt es von dort.
+
+1. Zugriffstoken erstellen: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → «Generate new token», einzig mit dem Recht `read:packages`. Dieses Token kann nur Images lesen, keinen Code.
+2. Container Manager → Registrierung → Einstellungen → Hinzufügen: Name `ghcr`, URL `https://ghcr.io`, Benutzername `stefanschaedeli`, Passwort = das Token. Diese Registrierung als aktiv setzen («Verwenden»).
+3. File Station: Ordner `/docker/weinkeller` und darin `data` anlegen. `docker-compose.nas.yml` und eine Datei `.env` mit der Zeile `ANTHROPIC_API_KEY=…` hochladen — beide Dateien müssen nebeneinander in `/docker/weinkeller` liegen. Ohne echten API-Schlüssel funktioniert die App auch im kostenlosen Demo-Modus: dazu in derselben `.env` zusätzlich `WINE_INTELLIGENCE_MODE=recorded` eintragen.
 4. Schreibrecht für den Container (läuft als Benutzer-ID 1000): per SSH `sudo chown -R 1000:1000 /volume1/docker/weinkeller/data`.
-5. Container Manager → Image → Hinzufügen → Aus Datei → Archiv wählen.
-6. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten.
-7. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
+5. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten. Das Image wird dabei automatisch heruntergeladen.
+6. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
+
+**Aktualisieren:** Container Manager → Image → `ghcr.io/stefanschaedeli/wyychaeller` → Aktualisieren (oder per SSH `docker pull ghcr.io/stefanschaedeli/wyychaeller:latest`), danach Projekt → Aktion → «Erstellen» (neu aufbauen). Die Daten in `data` bleiben erhalten. Wer eine feste Version will, trägt in `docker-compose.nas.yml` statt `latest` z. B. `1.1.0` ein.
+
+**Ohne Registry (offline):** Auf dem Mac `npm run image:nas` (für ARM: `bash scripts/build-nas-image.sh arm64`), das Archiv aus `dist/` im Container Manager unter Image → Hinzufügen → Aus Datei importieren und in `docker-compose.nas.yml` als Image `weinkeller:<Version>` eintragen.
 
 ## 5. Hinweis zur Installation als App
 

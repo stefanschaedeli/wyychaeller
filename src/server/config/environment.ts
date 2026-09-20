@@ -3,7 +3,7 @@ import { z } from "zod";
 const EnvironmentSchema = z.object({
   DATA_DIRECTORY: z.string().min(1).default("./data"),
   ANTHROPIC_API_KEY: z.string().optional(),
-  CLAUDE_MODEL: z.string().min(1).default("claude-opus-5"),
+  CLAUDE_MODEL: z.string().min(1).default("claude-sonnet-5"),
   WINE_INTELLIGENCE_MODE: z.enum(["claude", "recorded"]).default("claude"),
 });
 

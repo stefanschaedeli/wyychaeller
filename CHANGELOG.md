@@ -2,6 +2,12 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.1.0 — 2026-09-20
+
+- NAS deployment through GitHub Actions: every version tag builds a multi-architecture image (amd64 and arm64) and publishes it to the repository's private container registry, `ghcr.io/stefanschaedeli/wyychaeller`. The NAS pulls it from there; the manual archive upload remains as an offline alternative.
+- Continuous integration: `npm run verify` runs on every push to `main` and on pull requests.
+- `claude-sonnet-5` is the new default model (about 40 % of the cost of `claude-opus-5`); Opus stays available through `CLAUDE_MODEL`.
+
 ## 1.0.0 — 2026-09-20
 
 First release.

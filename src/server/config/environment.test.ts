@@ -10,7 +10,7 @@ describe("readEnvironment", () => {
     expect(readEnvironment({ NODE_ENV: TEST_NODE_ENV })).toEqual({
       dataDirectory: "./data",
       anthropicApiKey: null,
-      claudeModel: "claude-opus-5",
+      claudeModel: "claude-sonnet-5",
       wineIntelligenceMode: "claude",
     });
   });
@@ -26,12 +26,12 @@ describe("readEnvironment", () => {
       NODE_ENV: TEST_NODE_ENV,
       DATA_DIRECTORY: "/data",
       ANTHROPIC_API_KEY: "test-key",
-      CLAUDE_MODEL: "claude-sonnet-5",
+      CLAUDE_MODEL: "claude-opus-5",
       WINE_INTELLIGENCE_MODE: "recorded",
     });
     expect(environment.dataDirectory).toBe("/data");
     expect(environment.anthropicApiKey).toBe("test-key");
-    expect(environment.claudeModel).toBe("claude-sonnet-5");
+    expect(environment.claudeModel).toBe("claude-opus-5");
     expect(environment.wineIntelligenceMode).toBe("recorded");
   });
 

@@ -1,15 +1,17 @@
 # For Synology Container Manager: Projekt → Erstellen → this file.
 # Put ANTHROPIC_API_KEY into a file named ".env" in the same project folder.
+# The image is built by GitHub Actions (.github/workflows/release-image.yml); the NAS needs a
+# registry login for ghcr.io with a token that has only "read:packages" (see README section 4).
 services:
   weinkeller:
-    image: weinkeller:1.0.0
+    image: ghcr.io/stefanschaedeli/wyychaeller:latest
     container_name: weinkeller
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-5}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5}
       WINE_INTELLIGENCE_MODE: ${WINE_INTELLIGENCE_MODE:-claude}
     volumes:
       - /volume1/docker/weinkeller/data:/data
