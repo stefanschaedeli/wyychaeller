@@ -137,3 +137,11 @@ test("recognises a wine that is already in the cellar and merges the bottles", a
 
   await expect(page.getByText("8 Flaschen")).toBeVisible();
 });
+
+test("serves a web app manifest for installation", async ({ page }) => {
+  const manifestResponse = await page.request.get("/manifest.webmanifest");
+  const webManifest = await manifestResponse.json();
+
+  expect(webManifest.name).toBe("Weinkeller");
+  expect(webManifest.display).toBe("standalone");
+});
