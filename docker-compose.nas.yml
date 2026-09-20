@@ -1,0 +1,32 @@
+# For Synology Container Manager: Projekt → Erstellen → this file.
+# Put ANTHROPIC_API_KEY into a file named ".env" in the same project folder.
+services:
+  weinkeller:
+    image: weinkeller:1.0.0
+    container_name: weinkeller
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-5}
+    volumes:
+      - /volume1/docker/weinkeller/data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1000,gid=1000
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

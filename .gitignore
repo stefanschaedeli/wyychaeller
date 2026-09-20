@@ -52,3 +52,6 @@ data/
 .e2e-data/
 test-results/
 playwright-report/
+
+# NAS image archives
+dist/

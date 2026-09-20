@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Weinkeller
 
-## Getting Started
+Eine kleine, selbst gehostete Web-App, um die Weine im eigenen Keller zu erfassen. Ein Etikett-Foto genügt: Eine KI mit Websuche klassifiziert und bewertet den Wein, bestimmt das Trinkfenster und schlägt passendes Essen vor.
 
-First, run the development server:
+## Inhaltsverzeichnis
+
+1. [Was die App kann](#1-was-die-app-kann)
+2. [Kosten](#2-kosten)
+3. [Lokal testen (Docker Desktop)](#3-lokal-testen-docker-desktop)
+4. [Installation auf dem Synology NAS](#4-installation-auf-dem-synology-nas)
+5. [Hinweis zur Installation als App](#5-hinweis-zur-installation-als-app)
+6. [Zugriff von unterwegs](#6-zugriff-von-unterwegs)
+7. [Sicherheit](#7-sicherheit)
+8. [Backup](#8-backup)
+9. [Update](#9-update)
+10. [Entwicklung](#10-entwicklung)
+11. [Fehlerbehebung](#11-fehlerbehebung)
+
+## 1. Was die App kann
+
+- Einen Wein zu erfassen braucht nur ein Etikett-Foto und eine Bestätigung.
+- Eine KI mit Websuche klassifiziert den Wein, bewertet ihn, bestimmt das Trinkfenster und schlägt passendes Essen vor.
+- Alle KI-Ergebnisse liegen dauerhaft lokal: Ansehen, Suchen und Filtern kosten nichts und brauchen kein Internet.
+- Die App zeigt, welche Weine bald getrunken werden sollten, und empfiehlt zu einem Gericht die passende Flasche aus dem Keller.
+- Läuft als ein einziger Docker-Container, lokal in Docker Desktop zum Testen und dauerhaft auf einem Synology NAS.
+
+## 2. Kosten
+
+KI-Aufrufe entstehen ausschliesslich bei drei Aktionen: beim Erfassen eines Weins (Etikett lesen und Recherche), bei «Neu bewerten» und bei einer neuen Frage nach einem passenden Wein zu einem Gericht. Alles, was bereits gespeichert ist, kostet beim Ansehen, Suchen und Filtern nichts.
+
+> Hinweis: Die folgenden Zahlen sind eine Schätzung, keine Messung. Die tatsächlich gemessenen Werte aus einem echten Lauf werden in `docs/real-api-check.md` festgehalten, sobald dieser Check durchgeführt wurde.
+
+Mit dem Standardmodell `claude-opus-5` ist pro erfasstem Wein (Etikett lesen und Websuche-Recherche inklusive Websuche-Gebühr) mit rund 20–40 Rappen zu rechnen. Mit `claude-sonnet-5` liegt der Betrag bei etwa 40 % davon. Eine einzelne Frage nach einem passenden Wein zu einem Gericht kostet deutlich weniger als eine Weinerfassung.
+
+- `claude-opus-5` (Standard): beste Erkennung und Recherche.
+- `claude-sonnet-5`: deutlich günstiger, für bekannte Weine meist ausreichend. Umstellen über `CLAUDE_MODEL`.
+- Die monatliche Obergrenze in «Mehr → Einstellungen» schützt vor Überraschungen.
+
+Zum kostenlosen Ausprobieren ohne jeden API-Aufruf steht der Modus `WINE_INTELLIGENCE_MODE=recorded` zur Verfügung (siehe Abschnitt 3): Er liefert aufgezeichnete, realistische Antworten statt echter KI-Aufrufe.
+
+## 3. Lokal testen (Docker Desktop)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
+# API-Schlüssel in .env eintragen
+npm run deploy:local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Die App ist danach unter [http://localhost:3010](http://localhost:3010) erreichbar (der Hostport lässt sich mit der Umgebungsvariable `WEINKELLER_PORT` ändern; im Container und auf dem NAS bleibt der Port immer 3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Ohne jede Kosten ausprobieren, mit aufgezeichneten statt echten KI-Antworten:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+WINE_INTELLIGENCE_MODE=recorded npm run deploy:local
+```
 
-## Learn More
+## 4. Installation auf dem Synology NAS
 
-To learn more about Next.js, take a look at the following resources:
+1. CPU-Architektur prüfen: Systemsteuerung → Info-Center, oder per SSH `uname -m` (`x86_64` → `amd64`, `aarch64` → `arm64`).
+2. Auf dem Mac: `npm run image:nas` (für ARM: `bash scripts/build-nas-image.sh arm64`).
+3. File Station: Ordner `/docker/weinkeller` und darin `data` anlegen. `dist/weinkeller-1.0.0-amd64.tar.gz` und `docker-compose.nas.yml` hochladen.
+4. Schreibrecht für den Container (läuft als Benutzer-ID 1000): per SSH `sudo chown -R 1000:1000 /volume1/docker/weinkeller/data`.
+5. Im Ordner eine Datei `.env` mit der Zeile `ANTHROPIC_API_KEY=…` anlegen.
+6. Container Manager → Image → Hinzufügen → Aus Datei → Archiv wählen.
+7. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten.
+8. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 5. Hinweis zur Installation als App
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Auf dem iPhone funktioniert die Installation über «Zum Home-Bildschirm» direkt, ohne HTTPS. Android/Chrome verlangt für die echte App-Installation (mit Installationsdialog) HTTPS; das lässt sich optional über DSM → Anmeldeportal → Reverse Proxy mit Zertifikat einrichten. Ohne HTTPS funktioniert die App normal im Browser, inklusive Kamera für das Etikett-Foto.
 
-## Deploy on Vercel
+## 6. Zugriff von unterwegs
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Von unterwegs nur über VPN (Synology VPN Server oder Tailscale) zugreifen. Den Port 3000 nie direkt ins Internet freigeben: Die App hat bewusst kein Login.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 7. Sicherheit
+
+- Die App hat bewusst kein Login. Den Port deshalb nie ins Internet freigeben — Zugriff von unterwegs ausschliesslich über VPN oder Tailscale (siehe Abschnitt 6).
+- Der API-Schlüssel steht nur in der `.env`-Datei neben der Compose-Datei, nie im Image und nie in Git.
+- Im Anthropic-Konsole-Bereich für den Schlüssel ein Ausgabelimit («Spend Limit») setzen, damit ein Fehlverhalten oder ein Leck begrenzt bleibt.
+- Backups (siehe Abschnitt 8) enthalten Etikett-Fotos und die Datenbank — entsprechend sorgfältig aufbewahren.
+
+## 8. Backup
+
+Hyper Backup: Ordner `/docker/weinkeller/data` aufnehmen (enthält `weinkeller.db` und `photos/`). Wiederherstellen: Ordner zurückspielen, Projekt starten.
+
+## 9. Update
+
+Neues Archiv bauen, importieren, in `docker-compose.nas.yml` die Version anpassen, Projekt neu erstellen. Datenbank-Migrationen laufen beim Start automatisch.
+
+## 10. Entwicklung
+
+- `npm run dev` — Entwicklungsserver auf Port 3001.
+- `npm run verify` — Format, Lint, Typprüfung, Tests und die Playwright-Journey (Playwright braucht einen freien Port 3100).
+- `npm run deploy:local` — lokal bauen und starten, siehe Abschnitt 3.
+- Spezifikation und Pläne liegen unter `docs/superpowers/`.
+
+Qualitätsregeln (siehe Spezifikation Abschnitt 8):
+
+1. TypeScript strict, kein `any`, keine unbegründeten Non-Null-Assertions.
+2. Kleine Dateien (max. 250 Zeilen), kleine Funktionen, klare Schichten: UI ruft nie Datenbank oder Claude direkt auf.
+3. Sprechende, ausgeschriebene Namen; keine Abkürzungen; Booleans mit `is`/`has`.
+4. Keine magischen Werte — Konstanten zentral in `src/domain/constants.ts`.
+5. Testgetrieben (TDD); `npm run verify` muss vor jedem Commit grün sein.
+
+## 11. Fehlerbehebung
+
+| Symptom                                                            | Massnahme                                                             |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| «Kein API-Schlüssel hinterlegt»                                    | `.env` prüfen, Projekt neu starten.                                   |
+| «wartet auf Analyse» bleibt stehen                                 | Internet-Anbindung des NAS prüfen, danach «Analyse erneut versuchen». |
+| Container startet nicht, Log zeigt `SQLITE_CANTOPEN` oder `EACCES` | Schritt 4.4 (Schreibrecht auf `data`) wiederholen.                    |
+| Monatliche Obergrenze erreicht                                     | «Mehr → Einstellungen» öffnen und Obergrenze anpassen.                |
+
+Eine geänderte Währung in den Einstellungen wirkt sich auf die Preisrecherche erst nach einem Neustart des Containers aus.
