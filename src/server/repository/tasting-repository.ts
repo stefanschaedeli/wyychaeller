@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import type { WineCellarDatabase } from "../database/connection";
 import { tastings, wines, type TastingRecord } from "../database/schema";
-import { RecordNotFoundError } from "./wine-repository";
+import { RecordNotFoundError } from "./errors";
 
 export interface NewTasting {
   wineId: number;

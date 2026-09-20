@@ -1,16 +1,15 @@
+import { stripDiacritics } from "./text-normalization";
+
 export interface WineIdentityFields {
   producer: string | null;
   name: string | null;
   vintage: number | null;
 }
 
-const DIACRITIC_MARKS = /[̀-ͯ]/g;
 const NON_ALPHANUMERIC = /[^a-z0-9]/g;
 
 function normalizeText(text: string | null): string {
-  return (text ?? "")
-    .normalize("NFD")
-    .replace(DIACRITIC_MARKS, "")
+  return stripDiacritics(text ?? "")
     .toLowerCase()
     .replace(NON_ALPHANUMERIC, "");
 }

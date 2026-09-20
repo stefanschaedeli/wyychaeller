@@ -1,11 +1,8 @@
 import type { AnalysisErrorCode, AnalysisStatus } from "@/domain/wine-types";
 import type { WineRecord } from "../database/schema";
 import type { PhotoStorage } from "../photo-storage/photo-storage";
-import {
-  RecordNotFoundError,
-  type WineChanges,
-  type WineRepository,
-} from "../repository/wine-repository";
+import { RecordNotFoundError } from "../repository/errors";
+import type { WineChanges, WineRepository } from "../repository/wine-repository";
 import type { WineResearch } from "../wine-intelligence/schemas";
 import {
   WineIntelligenceError,

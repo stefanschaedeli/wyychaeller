@@ -3,7 +3,7 @@ import { enforceAiRateLimit } from "@/server/http/ai-rate-limit";
 import { handleRoute, parseRecordId } from "@/server/http/handle-route";
 import { AnalysisRequestSchema, readJsonBody } from "@/server/http/request-schemas";
 import { getCurrentYear, toWineResponse } from "@/server/http/wine-response";
-import { RecordNotFoundError } from "@/server/repository/wine-repository";
+import { RecordNotFoundError } from "@/server/repository/errors";
 import { getServiceContainer } from "@/server/service-container";
 
 export const dynamic = "force-dynamic";

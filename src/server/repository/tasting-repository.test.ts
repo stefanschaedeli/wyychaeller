@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { IN_MEMORY_DATABASE, openDatabase } from "../database/connection";
+import { RecordNotFoundError } from "./errors";
 import { TastingRepository } from "./tasting-repository";
-import { RecordNotFoundError, WineRepository } from "./wine-repository";
+import { WineRepository } from "./wine-repository";
 
 let wineRepository: WineRepository;
 let tastingRepository: TastingRepository;

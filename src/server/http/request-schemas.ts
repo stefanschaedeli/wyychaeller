@@ -3,6 +3,7 @@ import {
   MAXIMUM_BOTTLE_COUNT,
   MAXIMUM_LONG_TEXT_LENGTH,
   MAXIMUM_SHORT_TEXT_LENGTH,
+  MINIMUM_DISH_TEXT_LENGTH,
 } from "@/domain/constants";
 import { DRINKING_MATURITIES, WINE_TYPES } from "@/domain/wine-types";
 
@@ -77,7 +78,7 @@ export const WineListQuerySchema = z.object({
 
 export const DishRequestSchema = z
   .object({
-    dish: z.string().trim().min(2).max(MAXIMUM_SHORT_TEXT_LENGTH),
+    dish: z.string().trim().min(MINIMUM_DISH_TEXT_LENGTH).max(MAXIMUM_SHORT_TEXT_LENGTH),
     shouldForceRefresh: z.boolean().default(false),
   })
   .strict();

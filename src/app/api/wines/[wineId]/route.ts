@@ -1,7 +1,7 @@
 import { handleRoute, parseRecordId } from "@/server/http/handle-route";
 import { readJsonBody, WineEditSchema } from "@/server/http/request-schemas";
 import { getCurrentYear, toTastingResponse, toWineResponse } from "@/server/http/wine-response";
-import { RecordNotFoundError } from "@/server/repository/wine-repository";
+import { RecordNotFoundError } from "@/server/repository/errors";
 import { getServiceContainer } from "@/server/service-container";
 
 export const dynamic = "force-dynamic";

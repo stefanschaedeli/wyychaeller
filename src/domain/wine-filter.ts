@@ -1,4 +1,5 @@
 import { determineDrinkingMaturity } from "./drinking-maturity";
+import { stripDiacritics } from "./text-normalization";
 import type { DrinkingMaturity, DrinkingWindow, WineType } from "./wine-types";
 
 export interface FilterableWine extends DrinkingWindow {
@@ -18,10 +19,8 @@ export interface WineFilter {
   shouldIncludeEmpty?: boolean;
 }
 
-const DIACRITIC_MARKS = /[̀-ͯ]/g;
-
 function normalizeForSearch(text: string): string {
-  return text.normalize("NFD").replace(DIACRITIC_MARKS, "").toLowerCase().trim();
+  return stripDiacritics(text).toLowerCase().trim();
 }
 
 function matchesSearchText(wine: FilterableWine, searchText: string): boolean {

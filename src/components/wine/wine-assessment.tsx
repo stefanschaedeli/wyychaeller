@@ -8,8 +8,8 @@ function CriticScoreList({ wine }: { wine: WineResponse }) {
   }
   return (
     <ul className="grid gap-1">
-      {wine.criticScores.map((criticScore) => (
-        <li key={`${criticScore.source}-${criticScore.points}`}>
+      {wine.criticScores.map((criticScore, criticScoreIndex) => (
+        <li key={criticScoreIndex}>
           {isWebLink(criticScore.url) && criticScore.url !== null ? (
             <a
               href={criticScore.url}

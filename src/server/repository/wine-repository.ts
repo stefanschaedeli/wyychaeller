@@ -2,15 +2,9 @@ import { desc, eq } from "drizzle-orm";
 import { buildWineIdentityKey, type WineIdentityFields } from "@/domain/wine-identity";
 import type { WineCellarDatabase } from "../database/connection";
 import { wines, type NewWineRecord, type WineRecord } from "../database/schema";
+import { RecordNotFoundError } from "./errors";
 
 export type WineChanges = Partial<Omit<NewWineRecord, "id" | "createdAt" | "updatedAt">>;
-
-export class RecordNotFoundError extends Error {
-  constructor(recordDescription: string) {
-    super(`${recordDescription} was not found`);
-    this.name = "RecordNotFoundError";
-  }
-}
 
 export class WineRepository {
   constructor(private readonly database: WineCellarDatabase) {}
