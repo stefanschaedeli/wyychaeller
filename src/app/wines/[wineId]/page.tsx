@@ -8,6 +8,7 @@ import { WinePhoto } from "@/components/shared/wine-photo";
 import { AnalysisStatusPanel } from "@/components/wine/analysis-status-panel";
 import { ConfirmationForm } from "@/components/wine/confirmation-form";
 import { DuplicatePanel } from "@/components/wine/duplicate-panel";
+import { WineDetail } from "@/components/wine/wine-detail";
 import { apiClient } from "@/lib/api-client";
 import { formatWineTitle } from "@/lib/german-labels";
 import { parseWineIdParameter } from "@/lib/route-parameters";
@@ -28,6 +29,7 @@ function WineDetails({ wineId }: { wineId: number }) {
     pollIntervalMilliseconds: ANALYSIS_POLL_INTERVAL_MILLISECONDS,
     shouldPoll: isWaitingForAnalysis,
   });
+  const settings = useApiResource(useCallback(() => apiClient.getSettings(), []));
   const goToCellar = useCallback(() => router.push("/"), [router]);
 
   if (details.errorCode) {
@@ -36,8 +38,29 @@ function WineDetails({ wineId }: { wineId: number }) {
   if (details.data === null) return <p className="text-ink-muted">Wird geladen …</p>;
   const { wine } = details.data;
 
-  if (wine.analysisStatus === "complete") {
-    return <PageHeader eyebrow="Im Keller" title={formatWineTitle(wine)} />;
+  // Only a wine that was researched before can be in a re-assessment. During the first
+  // analysis analyzedAt is still empty, so new captures keep showing the capture panels.
+  const hasBeenConfirmed = wine.analyzedAt !== null;
+  if (
+    wine.analysisStatus === "complete" ||
+    (wine.analysisStatus === "analyzing" && hasBeenConfirmed)
+  ) {
+    return (
+      <>
+        {wine.analysisStatus === "analyzing" && (
+          <p className="card mb-4" aria-live="polite">
+            Wird neu bewertet … Das dauert etwa eine halbe Minute.
+          </p>
+        )}
+        <WineDetail
+          wine={wine}
+          tastings={details.data.tastings}
+          currency={settings.data?.currency ?? "CHF"}
+          onChanged={details.reload}
+          onDeleted={goToCellar}
+        />
+      </>
+    );
   }
 
   const isAwaitingConfirmation = wine.analysisStatus === "awaitingConfirmation";

@@ -55,3 +55,33 @@ test("never calls the API for a non-numeric wine id", async ({ page }) => {
   await expect(page.getByText("Dieser Eintrag existiert nicht mehr.")).toBeVisible();
   expect(wineApiRequests).toEqual([]);
 });
+
+test("shows the assessment and records a tasting", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: /Tignanello 2018/ }).click();
+
+  await expect(page.getByText("95 Pkt")).toBeVisible();
+  await expect(page.getByRole("img", { name: /Trinkfenster 2023 bis 2038/ })).toBeVisible();
+  await expect(page.getByText("Bistecca alla fiorentina")).toBeVisible();
+  const sourceLink = page.getByRole("link", { name: /Beispielquelle/ });
+  await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+  await expect(page.getByText("Regal 2, Fach C")).toBeVisible();
+
+  await page.getByRole("button", { name: "Flasche getrunken" }).click();
+  await page.getByRole("radio", { name: "4 Sterne" }).check();
+  await page.getByLabel("Verkostungsnotiz").fill("Dunkle Kirsche, sehr lang.");
+  await page.getByRole("button", { name: "Speichern" }).click();
+
+  await expect(page.getByText("5 Flaschen")).toBeVisible();
+  await expect(page.getByText("Dunkle Kirsche, sehr lang.")).toBeVisible();
+});
+
+test("edits cellar data", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: /Tignanello 2018/ }).click();
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  await page.getByLabel("Lagerort").fill("Regal 1");
+  await page.getByRole("button", { name: "Änderungen speichern" }).click();
+
+  await expect(page.getByText("Regal 1")).toBeVisible();
+});
