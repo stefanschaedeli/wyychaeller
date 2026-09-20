@@ -68,4 +68,13 @@ describe("PhotoStorage", () => {
     await photoStorage.deleteLabelPhoto(fileName);
     expect(await readdir(photoDirectory)).toEqual([]);
   });
+
+  it("lists the file names currently stored on disk", async () => {
+    const firstFileName = await photoStorage.storeLabelPhoto(await createTestImage(100, 100));
+    const secondFileName = await photoStorage.storeLabelPhoto(await createTestImage(100, 100));
+
+    const storedFileNames = await photoStorage.listStoredPhotoFileNames();
+
+    expect(storedFileNames.sort()).toEqual([firstFileName, secondFileName].sort());
+  });
 });
