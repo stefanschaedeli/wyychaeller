@@ -12,6 +12,7 @@ describe("readEnvironment", () => {
       anthropicApiKey: null,
       claudeModel: "claude-sonnet-5",
       wineIntelligenceMode: "claude",
+      logLevel: "info",
     });
   });
 
@@ -28,16 +29,22 @@ describe("readEnvironment", () => {
       ANTHROPIC_API_KEY: "test-key",
       CLAUDE_MODEL: "claude-opus-5",
       WINE_INTELLIGENCE_MODE: "recorded",
+      LOG_LEVEL: "debug",
     });
     expect(environment.dataDirectory).toBe("/data");
     expect(environment.anthropicApiKey).toBe("test-key");
     expect(environment.claudeModel).toBe("claude-opus-5");
     expect(environment.wineIntelligenceMode).toBe("recorded");
+    expect(environment.logLevel).toBe("debug");
   });
 
   it("rejects an unknown intelligence mode", () => {
     expect(() =>
       readEnvironment({ NODE_ENV: TEST_NODE_ENV, WINE_INTELLIGENCE_MODE: "magic" }),
     ).toThrow();
+  });
+
+  it("rejects an unknown log level", () => {
+    expect(() => readEnvironment({ NODE_ENV: TEST_NODE_ENV, LOG_LEVEL: "chatty" })).toThrow();
   });
 });

@@ -13,6 +13,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5}
       WINE_INTELLIGENCE_MODE: ${WINE_INTELLIGENCE_MODE:-claude}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:
       - /volume1/docker/weinkeller/data:/data
     read_only: true

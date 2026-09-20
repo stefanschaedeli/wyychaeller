@@ -4,7 +4,13 @@ import {
   WINE_INTELLIGENCE_ERROR_REASONS,
   type WineIntelligenceErrorReason,
 } from "../wine-intelligence/wine-intelligence";
+import { createLogger } from "../logging/logger";
 import { ApiError } from "./api-error";
+
+const logger = createLogger("http");
+
+// Polled every few seconds (Docker healthcheck, label thumbnails): only shown at debug level.
+const QUIET_PATH_PREFIXES = ["/api/health", "/api/photos/"];
 
 const RECORD_ID_PATTERN = /^[1-9][0-9]{0,14}$/;
 
@@ -80,16 +86,34 @@ function toApiError(error: unknown): ApiError {
 }
 
 function logUnexpected(error: unknown): ApiError {
-  console.error("Unexpected error in API route", error);
+  logger.error("Unexpected error in API route", { error });
   return new ApiError(500, "unexpected", "Something went wrong");
 }
 
-/** Wraps every route so all failures become the same safe JSON shape. */
-export async function handleRoute(handler: () => Promise<Response>): Promise<Response> {
+function logRequest(request: Request, status: number, startedAt: number, code?: string): void {
+  const path = new URL(request.url).pathname;
+  const message = `${request.method} ${path}`;
+  const fields = { status, durationMs: Date.now() - startedAt, code };
+  if (status >= 500) logger.error(message, fields);
+  else if (status >= 400) logger.warn(message, fields);
+  else if (QUIET_PATH_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+    logger.debug(message, fields);
+  } else logger.info(message, fields);
+}
+
+/** Wraps every route so all failures become the same safe JSON shape, and logs the request. */
+export async function handleRoute(
+  request: Request,
+  handler: () => Promise<Response>,
+): Promise<Response> {
+  const startedAt = Date.now();
   try {
-    return await handler();
+    const response = await handler();
+    logRequest(request, response.status, startedAt);
+    return response;
   } catch (error) {
     const apiError = toApiError(error);
+    logRequest(request, apiError.status, startedAt, apiError.code);
     const body: ApiErrorBody = { error: { code: apiError.code, message: apiError.message } };
     return Response.json(body, { status: apiError.status });
   }

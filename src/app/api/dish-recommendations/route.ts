@@ -8,8 +8,8 @@ import { getServiceContainer } from "@/server/service-container";
 export const dynamic = "force-dynamic";
 const RECENT_DISH_LIMIT = 8;
 
-export async function GET(): Promise<Response> {
-  return handleRoute(async () => {
+export async function GET(request: Request): Promise<Response> {
+  return handleRoute(request, async () => {
     const { dishRecommendationRepository } = getServiceContainer();
     return Response.json({
       recentDishes: dishRecommendationRepository.listRecentDishes(RECENT_DISH_LIMIT),
@@ -18,7 +18,7 @@ export async function GET(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  return handleRoute(async () => {
+  return handleRoute(request, async () => {
     const { dish, shouldForceRefresh } = DishRequestSchema.parse(await readJsonBody(request));
     const container = getServiceContainer();
     enforceAiRateLimit(container);

@@ -1,6 +1,7 @@
 import { buildCellarFingerprint } from "@/domain/cellar-fingerprint";
 import { determineDrinkingMaturity } from "@/domain/drinking-maturity";
 import type { StoredDishRecommendation, WineRecord } from "../database/schema";
+import { createLogger } from "../logging/logger";
 import type { DishRecommendationRepository } from "../repository/dish-recommendation-repository";
 import type { WineRepository } from "../repository/wine-repository";
 import { sanitizeDishRecommendations } from "../wine-intelligence/sanitize";
@@ -28,6 +29,8 @@ export interface DishRecommendationResult {
   createdAt: Date;
 }
 
+const logger = createLogger("dish");
+
 export class DishRecommendationService {
   constructor(private readonly dependencies: DishRecommendationDependencies) {}
 
@@ -40,6 +43,7 @@ export class DishRecommendationService {
       .listWines()
       .filter((wine) => wine.analysisStatus === "complete" && wine.bottleCount > 0);
     if (availableWines.length === 0) {
+      logger.info("Dish asked, but the cellar has no analysed wine in stock", { dish });
       return { dish, recommendations: [], isFromCache: false, createdAt: new Date() };
     }
 
@@ -49,9 +53,14 @@ export class DishRecommendationService {
       !shouldForceRefresh && storedAnswer?.cellarFingerprint === cellarFingerprint;
     if (storedAnswer && canReuseStoredAnswer) {
       const recommendations = this.attachWines(storedAnswer.recommendations, availableWines);
+      logger.info("Dish answered from cache", {
+        dish,
+        recommendationCount: recommendations.length,
+      });
       return { dish, recommendations, isFromCache: true, createdAt: storedAnswer.createdAt };
     }
 
+    logger.info("Dish asked", { dish, shouldForceRefresh, wineCount: availableWines.length });
     const freshRecommendations = await this.askIntelligence(dish, availableWines);
     const savedAnswer = dishRecommendationRepository.saveRecommendation({
       dish,
@@ -59,6 +68,7 @@ export class DishRecommendationService {
       cellarFingerprint,
     });
     const recommendations = this.attachWines(freshRecommendations, availableWines);
+    logger.info("Dish answered", { dish, recommendationCount: recommendations.length });
     return { dish, recommendations, isFromCache: false, createdAt: savedAnswer.createdAt };
   }
 

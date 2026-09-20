@@ -6,11 +6,14 @@ import { handleRoute } from "@/server/http/handle-route";
 import { WineListQuerySchema } from "@/server/http/request-schemas";
 import { getCurrentYear, toWineResponse } from "@/server/http/wine-response";
 import { getServiceContainer, type ServiceContainer } from "@/server/service-container";
+import { createLogger } from "@/server/logging/logger";
+
+const logger = createLogger("cellar");
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request): Promise<Response> {
-  return handleRoute(async () => {
+  return handleRoute(request, async () => {
     const queryEntries = Object.fromEntries(new URL(request.url).searchParams);
     const query = WineListQuerySchema.parse(queryEntries);
     const currentYear = getCurrentYear();
@@ -47,7 +50,7 @@ async function storeUploadedPhoto(container: ServiceContainer, request: Request)
 }
 
 export async function POST(request: Request): Promise<Response> {
-  return handleRoute(async () => {
+  return handleRoute(request, async () => {
     const container = getServiceContainer();
     // Validate and store the photo before spending an AI rate-limit token, so a
     // garbage upload never blocks a real analysis request. If the limit is then
@@ -61,6 +64,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const wine = container.wineRepository.createPendingWine(photoFileName);
+    logger.info("Wine captured, analysis queued", { wineId: wine.id, photoFileName });
     container.backgroundTasks.run(container.wineAnalysisService.analyzeWine(wine.id, "full"));
 
     return Response.json({ wine: toWineResponse(wine, getCurrentYear()) }, { status: 201 });

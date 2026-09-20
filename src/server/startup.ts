@@ -1,17 +1,32 @@
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import packageJson from "../../package.json";
+import { createLogger } from "./logging/logger";
 import { findOrphanedPhotoFileNames } from "./photo-storage/photo-cleanup";
 import { readEnvironment } from "./config/environment";
 import { getServiceContainer, PHOTO_FOLDER_NAME } from "./service-container";
 
+const logger = createLogger("startup");
+
 export async function initializeServer(): Promise<void> {
-  const { dataDirectory } = readEnvironment();
+  const environment = readEnvironment();
+  const { dataDirectory } = environment;
+  logger.info("Weinkeller starting", {
+    version: packageJson.version,
+    model: environment.claudeModel,
+    intelligenceMode: environment.wineIntelligenceMode,
+    hasApiKey: environment.anthropicApiKey !== null,
+    dataDirectory,
+    logLevel: environment.logLevel,
+  });
   await mkdir(path.join(dataDirectory, PHOTO_FOLDER_NAME), { recursive: true });
 
   const resetCount = getServiceContainer().wineRepository.resetInterruptedAnalyses();
-  if (resetCount > 0) console.warn(`Reset ${resetCount} analyses interrupted by a restart`);
+  if (resetCount > 0) logger.warn("Reset analyses interrupted by a restart", { resetCount });
 
   await sweepOrphanedPhotos();
+  const wineCount = getServiceContainer().wineRepository.listWines().length;
+  logger.info("Weinkeller ready", { wineCount });
 }
 
 /**
@@ -29,9 +44,9 @@ async function sweepOrphanedPhotos(): Promise<void> {
       await photoStorage.deleteLabelPhoto(fileName);
     }
     if (orphanedFileNames.length > 0) {
-      console.warn(`Removed ${orphanedFileNames.length} orphaned label photo(s)`);
+      logger.warn("Removed orphaned label photos", { photoCount: orphanedFileNames.length });
     }
   } catch (error) {
-    console.error("Orphaned photo sweep failed", error);
+    logger.error("Orphaned photo sweep failed", { error });
   }
 }

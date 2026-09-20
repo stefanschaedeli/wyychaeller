@@ -4,12 +4,15 @@ import { readJsonBody, WineConfirmationSchema } from "@/server/http/request-sche
 import { getCurrentYear, toWineResponse } from "@/server/http/wine-response";
 import { RecordNotFoundError } from "@/server/repository/errors";
 import { getServiceContainer } from "@/server/service-container";
+import { createLogger } from "@/server/logging/logger";
+
+const logger = createLogger("cellar");
 
 export const dynamic = "force-dynamic";
 type RouteContext = { params: Promise<{ wineId: string }> };
 
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
-  return handleRoute(async () => {
+  return handleRoute(request, async () => {
     const wineId = parseRecordId((await context.params).wineId);
     const confirmedFields = WineConfirmationSchema.parse(await readJsonBody(request));
     const { wineRepository } = getServiceContainer();
@@ -30,6 +33,10 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     const confirmedWine = wineRepository.updateWine(wineId, {
       ...confirmedFields,
       analysisStatus: "complete",
+    });
+    logger.info("Wine confirmed and added to the cellar", {
+      wineId,
+      bottleCount: confirmedWine.bottleCount,
     });
     return Response.json({ wine: toWineResponse(confirmedWine, getCurrentYear()) });
   });

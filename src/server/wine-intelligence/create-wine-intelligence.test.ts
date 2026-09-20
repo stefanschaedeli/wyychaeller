@@ -8,6 +8,7 @@ const baseEnvironment = {
   claudeModel: "claude-opus-5",
   anthropicApiKey: null,
   wineIntelligenceMode: "claude",
+  logLevel: "silent",
 } as const;
 
 describe("createWineIntelligence", () => {

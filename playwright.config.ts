@@ -27,6 +27,7 @@ export default defineConfig({
     env: {
       WINE_INTELLIGENCE_MODE: "recorded",
       DATA_DIRECTORY: "./.e2e-data",
+      LOG_LEVEL: "warn",
     },
   },
 });

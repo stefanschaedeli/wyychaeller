@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { jsonRequest } from "@/server/testing/json-request";
+import { getRequest, jsonRequest } from "@/server/testing/json-request";
 import { createTestContainer, type TestContainer } from "@/server/testing/test-container";
 import { GET as getSummary } from "./cellar-summary/route";
 import { GET as listRecentDishes, POST as recommend } from "./dish-recommendations/route";
@@ -81,7 +81,9 @@ describe("dish recommendations", () => {
     expect(first.recommendations[0].wine.name).toBe("Tignanello");
     expect(first.isFromCache).toBe(false);
     expect(second.isFromCache).toBe(true);
-    expect((await (await listRecentDishes()).json()).recentDishes).toEqual(["Rindsfilet"]);
+    expect(
+      (await (await listRecentDishes(getRequest("/api/dish-recommendations"))).json()).recentDishes,
+    ).toEqual(["Rindsfilet"]);
   });
 
   it("rejects empty dishes", async () => {
@@ -95,7 +97,7 @@ describe("dish recommendations", () => {
 describe("summary, history and settings", () => {
   it("summarizes the cellar including AI usage", async () => {
     addCompleteWine();
-    const summary = await (await getSummary()).json();
+    const summary = await (await getSummary(getRequest("/api/cellar-summary"))).json();
     expect(summary).toMatchObject({
       wineCount: 1,
       bottleCount: 6,
@@ -111,7 +113,7 @@ describe("summary, history and settings", () => {
   it("lists the tasting history", async () => {
     const wineId = addCompleteWine();
     testContainer.container.tastingRepository.recordTasting({ wineId, tastedOn: "2026-09-19" });
-    const history = await (await listTastings()).json();
+    const history = await (await listTastings(getRequest("/api/tastings"))).json();
     expect(history.tastings[0]).toMatchObject({ wineName: "Tignanello", tastedOn: "2026-09-19" });
   });
 
@@ -121,7 +123,10 @@ describe("summary, history and settings", () => {
       jsonRequest(url, "PUT", { currency: "EUR", monthlyAiCallLimit: 50 }),
     );
     expect(await saved.json()).toEqual({ currency: "EUR", monthlyAiCallLimit: 50 });
-    expect(await (await getSettings()).json()).toEqual({ currency: "EUR", monthlyAiCallLimit: 50 });
+    expect(await (await getSettings(getRequest("/api/settings"))).json()).toEqual({
+      currency: "EUR",
+      monthlyAiCallLimit: 50,
+    });
 
     const invalid = await saveSettings(
       jsonRequest(url, "PUT", { currency: "euro", monthlyAiCallLimit: 0 }),

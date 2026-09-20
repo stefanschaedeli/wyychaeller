@@ -45,6 +45,7 @@ export class ClaudeWineIntelligence implements WineIntelligence {
   async analyzeLabel(photo: LabelPhoto): Promise<IntelligenceResult<LabelReading>> {
     const result = await this.guard(() =>
       requestStructuredOutput(this.client, this.model, {
+        operation: "analyzeLabel",
         schema: LabelReadingSchema,
         instructions: LABEL_READING_INSTRUCTIONS,
         effort: "low",
@@ -72,6 +73,7 @@ export class ClaudeWineIntelligence implements WineIntelligence {
         buildWebResearchPrompt(identity, this.currency, currentYear),
       );
       const structured = await requestStructuredOutput(this.client, this.model, {
+        operation: "researchWine",
         schema: WineResearchSchema,
         instructions: RESEARCH_STRUCTURING_INSTRUCTIONS,
         effort: "low",
@@ -90,6 +92,7 @@ export class ClaudeWineIntelligence implements WineIntelligence {
   ): Promise<IntelligenceResult<DishRecommendation[]>> {
     const result = await this.guard(() =>
       requestStructuredOutput(this.client, this.model, {
+        operation: "recommendWinesForDish",
         schema: DishRecommendationListSchema,
         instructions: DISH_PAIRING_INSTRUCTIONS,
         effort: "medium",

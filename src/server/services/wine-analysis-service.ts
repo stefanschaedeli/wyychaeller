@@ -1,5 +1,6 @@
 import type { AnalysisErrorCode, AnalysisStatus } from "@/domain/wine-types";
 import type { WineRecord } from "../database/schema";
+import { createLogger } from "../logging/logger";
 import type { PhotoStorage } from "../photo-storage/photo-storage";
 import { RecordNotFoundError } from "../repository/errors";
 import type { WineChanges, WineRepository } from "../repository/wine-repository";
@@ -10,6 +11,8 @@ import {
   type WineIntelligence,
 } from "../wine-intelligence/wine-intelligence";
 import { AiBudgetExceededError, type AiBudgetGuard } from "./ai-budget-guard";
+
+const logger = createLogger("analysis");
 
 export type AnalysisMode = "full" | "researchOnly";
 
@@ -64,12 +67,16 @@ export class WineAnalysisService {
     const wineBefore = wineRepository.findWineById(wineId);
     if (wineBefore === null) return;
     const isAlreadyComplete = wineBefore.analysisStatus === "complete";
+    const startedAt = Date.now();
+    logger.info("Analysis started", { wineId, mode, previousStatus: wineBefore.analysisStatus });
 
     try {
       wineRepository.updateWine(wineId, { analysisStatus: "analyzing", analysisError: null });
       const wineWithIdentity = mode === "full" ? await this.readLabel(wineBefore) : wineBefore;
       if (mode === "full" && this.markDuplicate(wineWithIdentity)) return;
       await this.researchAndStore(wineWithIdentity, isAlreadyComplete);
+      const status = wineRepository.findWineById(wineId)?.analysisStatus;
+      logger.info("Analysis finished", { wineId, status, durationMs: Date.now() - startedAt });
     } catch (error) {
       this.recordFailure(wineId, error, isAlreadyComplete);
     }
@@ -87,6 +94,8 @@ export class WineAnalysisService {
 
     const { isWineLabel, ...labelFields } = labelResult.value;
     if (!isWineLabel) throw new LabelUnreadableError();
+    const { producer, name, vintage } = labelFields;
+    logger.info("Label read", { wineId: wine.id, producer, name, vintage, ...labelResult.usage });
     return wineRepository.updateWine(wine.id, labelFields);
   }
 
@@ -98,6 +107,11 @@ export class WineAnalysisService {
     wineRepository.updateWine(wine.id, {
       duplicateOfWineId: existingWine.id,
       analysisStatus: "awaitingConfirmation",
+    });
+    logger.info("Duplicate found, research skipped", {
+      wineId: wine.id,
+      duplicateOfWineId: existingWine.id,
+      status: "awaitingConfirmation",
     });
     return true;
   }
@@ -113,14 +127,26 @@ export class WineAnalysisService {
       ...mergeResearch(wine, researchResult.value),
       analysisStatus: nextStatus,
     });
+    const { aggregateScore, drinkFromYear, drinkUntilYear, confidence } = researchResult.value;
+    logger.info("Research stored", {
+      wineId: wine.id,
+      aggregateScore,
+      drinkFromYear,
+      drinkUntilYear,
+      confidence,
+      ...researchResult.usage,
+    });
   }
 
   private recordFailure(wineId: number, error: unknown, isAlreadyComplete: boolean): void {
     const errorCode = toErrorCode(error);
-    if (errorCode === "unexpected") console.error("Wine analysis failed unexpectedly", error);
-
-    let nextStatus: AnalysisStatus = RETRYABLE_ERROR_CODES.has(errorCode) ? "pending" : "failed";
+    const isRetryable = RETRYABLE_ERROR_CODES.has(errorCode);
+    let nextStatus: AnalysisStatus = isRetryable ? "pending" : "failed";
     if (isAlreadyComplete) nextStatus = "complete";
+
+    const fields = { wineId, code: errorCode, status: nextStatus, isRetryable };
+    if (errorCode === "unexpected") logger.error("Analysis failed", { ...fields, error });
+    else logger.warn("Analysis failed", fields);
     try {
       this.dependencies.wineRepository.updateWine(wineId, {
         analysisStatus: nextStatus,
@@ -128,7 +154,7 @@ export class WineAnalysisService {
       });
     } catch (updateError) {
       if (updateError instanceof RecordNotFoundError) return;
-      console.error("Failed to record wine analysis failure", updateError);
+      logger.error("Failed to record wine analysis failure", { wineId, error: updateError });
     }
   }
 }

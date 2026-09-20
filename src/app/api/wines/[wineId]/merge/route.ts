@@ -4,13 +4,16 @@ import { MergeRequestSchema, readJsonBody } from "@/server/http/request-schemas"
 import { getCurrentYear, toWineResponse } from "@/server/http/wine-response";
 import { RecordNotFoundError } from "@/server/repository/errors";
 import { getServiceContainer } from "@/server/service-container";
+import { createLogger } from "@/server/logging/logger";
+
+const logger = createLogger("cellar");
 
 export const dynamic = "force-dynamic";
 type RouteContext = { params: Promise<{ wineId: string }> };
 
 /** Adds the bottles of a duplicate capture to the wine that already exists. */
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
-  return handleRoute(async () => {
+  return handleRoute(request, async () => {
     const duplicateWineId = parseRecordId((await context.params).wineId);
     const { bottleCount } = MergeRequestSchema.parse(await readJsonBody(request));
     const { wineRepository, photoStorage } = getServiceContainer();
@@ -28,6 +31,12 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     });
     wineRepository.deleteWine(duplicateWineId);
     await photoStorage.deleteLabelPhoto(duplicateWine.photoFileName);
+    logger.info("Duplicate merged into the existing wine", {
+      duplicateWineId,
+      wineId: existingWine.id,
+      addedBottles: bottleCount,
+      bottleCount: mergedWine.bottleCount,
+    });
 
     return Response.json({ wine: toWineResponse(mergedWine, getCurrentYear()) });
   });

@@ -18,3 +18,7 @@ export const MAXIMUM_DISH_RECOMMENDATIONS = 3;
 export const AI_REQUESTS_PER_MINUTE = 20;
 
 export const MINIMUM_DISH_TEXT_LENGTH = 2;
+
+/** Ordered from most to least talkative; "silent" switches the activity log off. */
+export const LOG_LEVELS = ["debug", "info", "warn", "error", "silent"] as const;
+export const DEFAULT_LOG_LEVEL = "info";

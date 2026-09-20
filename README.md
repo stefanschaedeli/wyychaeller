@@ -65,6 +65,8 @@ Das Image wird von GitHub Actions bei jedem Versions-Tag gebaut (für Intel/AMD 
 5. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten. Das Image wird dabei automatisch heruntergeladen.
 6. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
 
+**Protokoll:** Die App schreibt laufend ins Container-Protokoll, was sie tut: jede Anfrage, jeden Analyseschritt, jeden Claude-Aufruf mit Dauer und Token-Verbrauch, die Websuchen, Fotos und Änderungen am Keller. Anzeigen im Container Manager unter Container → `weinkeller` → Details → Protokoll, oder per SSH mit `docker logs -f weinkeller`. Die Ausführlichkeit steuert `LOG_LEVEL` in der `.env`: `info` (Standard), `debug` (zusätzlich Healthcheck- und Foto-Abrufe), `warn`, `error` oder `silent`. Der API-Schlüssel, Fotos und Antworttexte der KI werden nie protokolliert.
+
 **Aktualisieren:** Container Manager → Image → `ghcr.io/stefanschaedeli/wyychaeller` → Aktualisieren (oder per SSH `docker pull ghcr.io/stefanschaedeli/wyychaeller:latest`), danach Projekt → Aktion → «Erstellen» (neu aufbauen). Die Daten in `data` bleiben erhalten. Wer eine feste Version will, trägt in `docker-compose.nas.yml` statt `latest` z. B. `1.1.0` ein.
 
 **Ohne Registry (offline):** Auf dem Mac `npm run image:nas` (für ARM: `bash scripts/build-nas-image.sh arm64`), das Archiv aus `dist/` im Container Manager unter Image → Hinzufügen → Aus Datei importieren und in `docker-compose.nas.yml` als Image `weinkeller:<Version>` eintragen.
@@ -110,11 +112,12 @@ Qualitätsregeln (siehe Spezifikation Abschnitt 8):
 
 ## 11. Fehlerbehebung
 
-| Symptom                                                            | Massnahme                                                             |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
-| «Kein API-Schlüssel hinterlegt»                                    | `.env` prüfen, Projekt neu starten.                                   |
-| «wartet auf Analyse» bleibt stehen                                 | Internet-Anbindung des NAS prüfen, danach «Analyse erneut versuchen». |
-| Container startet nicht, Log zeigt `SQLITE_CANTOPEN` oder `EACCES` | Schritt 4.4 (Schreibrecht auf `data`) wiederholen.                    |
-| Monatliche Obergrenze erreicht                                     | «Mehr → Einstellungen» öffnen und Obergrenze anpassen.                |
+| Symptom                                                            | Massnahme                                                                              |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| «Kein API-Schlüssel hinterlegt»                                    | `.env` prüfen, Projekt neu starten.                                                    |
+| «wartet auf Analyse» bleibt stehen                                 | Internet-Anbindung des NAS prüfen, danach «Analyse erneut versuchen».                  |
+| Container startet nicht, Log zeigt `SQLITE_CANTOPEN` oder `EACCES` | Schritt 4.4 (Schreibrecht auf `data`) wiederholen.                                     |
+| Unklar, was die App gerade tut                                     | Container-Protokoll lesen (`docker logs -f weinkeller`), bei Bedarf `LOG_LEVEL=debug`. |
+| Monatliche Obergrenze erreicht                                     | «Mehr → Einstellungen» öffnen und Obergrenze anpassen.                                 |
 
 Eine geänderte Währung in den Einstellungen wirkt sich auf die Preisrecherche erst nach einem Neustart des Containers aus.

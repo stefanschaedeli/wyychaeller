@@ -1,6 +1,9 @@
+import { createLogger } from "../logging/logger";
 import type { AiUsageRepository } from "../repository/ai-usage-repository";
 import type { SettingsRepository } from "../repository/settings-repository";
 import type { TokenUsage } from "../wine-intelligence/wine-intelligence";
+
+const logger = createLogger("budget");
 
 export class AiBudgetExceededError extends Error {
   constructor() {
@@ -24,11 +27,15 @@ export class AiBudgetGuard {
 
   assertCallAllowed(): void {
     const summary = this.getUsageSummary();
-    if (summary.callsThisMonth >= summary.monthlyLimit) throw new AiBudgetExceededError();
+    if (summary.callsThisMonth >= summary.monthlyLimit) {
+      logger.warn("Monthly AI call limit reached, call refused", { ...summary });
+      throw new AiBudgetExceededError();
+    }
   }
 
   recordCall(operation: string, usage: TokenUsage): void {
     this.aiUsageRepository.recordUsage({ operation, ...usage });
+    logger.info("AI call recorded", { operation, ...usage, ...this.getUsageSummary() });
   }
 
   getUsageSummary(): AiUsageSummary {

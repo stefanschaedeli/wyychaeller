@@ -1,6 +1,9 @@
 import { MAXIMUM_DISH_RECOMMENDATIONS } from "@/domain/constants";
+import { createLogger } from "../logging/logger";
 import type { DishRecommendation, LabelReading, WineResearch } from "./schemas";
 import type { CellarWineSummary, IntelligenceResult, WineIntelligence } from "./wine-intelligence";
+
+const logger = createLogger("claude");
 
 const NO_USAGE = { inputTokens: 0, outputTokens: 0 };
 
@@ -36,10 +39,12 @@ const RECORDED_RESEARCH: WineResearch = {
 /** Canned answers for tests and demos. Never calls the network and costs nothing. */
 export class RecordedWineIntelligence implements WineIntelligence {
   async analyzeLabel(): Promise<IntelligenceResult<LabelReading>> {
+    logger.info("Recorded answer used", { operation: "analyzeLabel" });
     return { value: RECORDED_LABEL_READING, usage: NO_USAGE };
   }
 
   async researchWine(): Promise<IntelligenceResult<WineResearch>> {
+    logger.info("Recorded answer used", { operation: "researchWine" });
     return { value: RECORDED_RESEARCH, usage: NO_USAGE };
   }
 
@@ -52,6 +57,7 @@ export class RecordedWineIntelligence implements WineIntelligence {
       reasoning: `Aufgezeichnete Beispielempfehlung zu «${dish}».`,
       servingTip: null,
     }));
+    logger.info("Recorded answer used", { operation: "recommendWinesForDish" });
     return { value: recommendations, usage: NO_USAGE };
   }
 }

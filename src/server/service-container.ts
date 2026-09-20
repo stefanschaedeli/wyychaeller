@@ -3,6 +3,7 @@ import { AI_REQUESTS_PER_MINUTE } from "@/domain/constants";
 import { readEnvironment } from "./config/environment";
 import { openDatabase, type WineCellarDatabase } from "./database/connection";
 import { RateLimiter } from "./http/rate-limiter";
+import { createLogger } from "./logging/logger";
 import { PhotoStorage } from "./photo-storage/photo-storage";
 import { AiUsageRepository } from "./repository/ai-usage-repository";
 import { DishRecommendationRepository } from "./repository/dish-recommendation-repository";
@@ -69,6 +70,8 @@ export function buildServiceContainer(options: ServiceContainerOptions) {
   };
 }
 
+const logger = createLogger("startup");
+
 // Next.js may load this module more than once (instrumentation, routes, dev reloads).
 // Keeping the instance on globalThis guarantees one database connection per process.
 const globalStore = globalThis as typeof globalThis & {
@@ -77,7 +80,9 @@ const globalStore = globalThis as typeof globalThis & {
 
 function createProductionContainer(): ServiceContainer {
   const environment = readEnvironment();
-  const database = openDatabase(path.join(environment.dataDirectory, DATABASE_FILE_NAME));
+  const databaseFilePath = path.join(environment.dataDirectory, DATABASE_FILE_NAME);
+  const database = openDatabase(databaseFilePath);
+  logger.info("Database opened and migrated", { databaseFilePath });
   const currency = new SettingsRepository(database).getCurrency();
   const created = createWineIntelligence(environment, currency);
   return buildServiceContainer({

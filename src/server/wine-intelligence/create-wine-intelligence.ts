@@ -1,8 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Environment } from "../config/environment";
+import { createLogger } from "../logging/logger";
 import { ClaudeWineIntelligence } from "./claude-wine-intelligence";
 import { RecordedWineIntelligence } from "./recorded-wine-intelligence";
 import { WineIntelligenceError, type WineIntelligence } from "./wine-intelligence";
+
+const logger = createLogger("claude");
 
 const REQUEST_TIMEOUT_MILLISECONDS = 5 * 60 * 1000;
 
@@ -29,9 +32,11 @@ export function createWineIntelligence(
   currency: string,
 ): CreatedWineIntelligence {
   if (environment.wineIntelligenceMode === "recorded") {
+    logger.info("Using recorded answers, Claude is never called");
     return { wineIntelligence: new RecordedWineIntelligence(), isConfigured: true };
   }
   if (environment.anthropicApiKey === null) {
+    logger.warn("ANTHROPIC_API_KEY is missing, every analysis will fail until it is set");
     return { wineIntelligence: new UnconfiguredWineIntelligence(), isConfigured: false };
   }
   const client = new Anthropic({
@@ -44,5 +49,6 @@ export function createWineIntelligence(
     () => new Date().getFullYear(),
     currency,
   );
+  logger.info("Using Claude", { model: environment.claudeModel });
   return { wineIntelligence, isConfigured: true };
 }

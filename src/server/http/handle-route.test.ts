@@ -1,14 +1,20 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { InvalidPhotoError } from "../photo-storage/photo-storage";
 import { RecordNotFoundError } from "../repository/errors";
 import { AiBudgetExceededError } from "../services/ai-budget-guard";
 import { WineIntelligenceError } from "../wine-intelligence/wine-intelligence";
 import { ApiError } from "./api-error";
+import { resetLogging } from "../logging/logger";
+import { captureLogLines } from "../testing/capture-log";
 import { handleRoute, parseRecordId } from "./handle-route";
 
+function createRequest(path = "/api/wines", method = "GET"): Request {
+  return new Request(`http://localhost${path}?dish=secret-query`, { method });
+}
+
 async function runFailing(error: unknown) {
-  const response = await handleRoute(async () => {
+  const response = await handleRoute(createRequest(), async () => {
     throw error;
   });
   return { status: response.status, body: await response.json() };
@@ -16,7 +22,9 @@ async function runFailing(error: unknown) {
 
 describe("handleRoute", () => {
   it("passes successful responses through", async () => {
-    const response = await handleRoute(async () => Response.json({ ok: true }, { status: 201 }));
+    const response = await handleRoute(createRequest(), async () =>
+      Response.json({ ok: true }, { status: 201 }),
+    );
     expect(response.status).toBe(201);
   });
 
@@ -45,11 +53,9 @@ describe("handleRoute", () => {
   });
 
   it("hides internal details of unexpected errors", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const result = await runFailing(new Error("SQLITE_BUSY at /app/secret/path"));
     expect(result.status).toBe(500);
     expect(JSON.stringify(result.body)).not.toContain("secret");
-    consoleSpy.mockRestore();
   });
 
   // Turbopack production builds can duplicate a class across route chunks
@@ -98,7 +104,6 @@ describe("handleRoute", () => {
   });
 
   it("falls back to 500 unexpected for a foreign ApiError with a malformed status", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     class ForeignApiError extends Error {
       readonly status = "not-a-number";
       readonly code = "analysisRunning";
@@ -110,7 +115,6 @@ describe("handleRoute", () => {
     const result = await runFailing(new ForeignApiError());
     expect(result.status).toBe(500);
     expect(result.body.error.code).toBe("unexpected");
-    consoleSpy.mockRestore();
   });
 
   it("recognizes a foreign WineIntelligenceError by name with a known reason", async () => {
@@ -127,7 +131,6 @@ describe("handleRoute", () => {
   });
 
   it("falls back to 500 unexpected for a foreign WineIntelligenceError with an unknown reason", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     class ForeignWineIntelligenceError extends Error {
       readonly reason = "somethingMadeUp";
       constructor() {
@@ -138,8 +141,49 @@ describe("handleRoute", () => {
     const result = await runFailing(new ForeignWineIntelligenceError());
     expect(result.status).toBe(500);
     expect(result.body.error.code).toBe("unexpected");
-    consoleSpy.mockRestore();
   });
+});
+
+describe("handleRoute request log", () => {
+  afterEach(() => resetLogging());
+
+  it("logs method, path, status and duration without the query string", async () => {
+    const lines = captureLogLines();
+    await handleRoute(createRequest("/api/wines", "POST"), async () =>
+      Response.json({}, { status: 201 }),
+    );
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatch(/INFO {2}\[http\] POST \/api\/wines status=201 durationMs=\d+$/);
+  });
+
+  it("logs client errors as warnings with their code", async () => {
+    const lines = captureLogLines();
+    await runFailing(new RecordNotFoundError("Wine 1"));
+    expect(lines[0]).toMatch(
+      /WARN {2}\[http\] GET \/api\/wines status=404 durationMs=\d+ code=notFound$/,
+    );
+  });
+
+  it("logs unexpected failures as errors, with the cause on its own line", async () => {
+    const lines = captureLogLines();
+    await runFailing(new Error("SQLITE_BUSY"));
+    expect(lines[0]).toContain("ERROR [http] Unexpected error in API route");
+    expect(lines[0]).toContain("SQLITE_BUSY");
+    expect(lines[1]).toMatch(/ERROR \[http\] GET \/api\/wines status=500/);
+  });
+
+  it.each(["/api/health", "/api/photos/abc.jpg"])(
+    "keeps successful %s requests out of the info log",
+    async (path) => {
+      const infoLines = captureLogLines("info");
+      await handleRoute(createRequest(path), async () => Response.json({}));
+      expect(infoLines).toEqual([]);
+
+      const debugLines = captureLogLines("debug");
+      await handleRoute(createRequest(path), async () => Response.json({}));
+      expect(debugLines[0]).toContain(`DEBUG [http] GET ${path} status=200`);
+    },
+  );
 });
 
 describe("parseRecordId", () => {

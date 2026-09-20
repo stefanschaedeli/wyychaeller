@@ -1,12 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
+import { createLogger } from "../logging/logger";
 import { WEB_RESEARCH_INSTRUCTIONS } from "./prompts";
 import {
   WineIntelligenceError,
   type IntelligenceResult,
   type TokenUsage,
 } from "./wine-intelligence";
+
+const logger = createLogger("claude");
 
 const MAXIMUM_OUTPUT_TOKENS = 16000;
 const MAXIMUM_WEB_SEARCHES = 6;
@@ -18,6 +21,8 @@ export type ReasoningEffort = "low" | "medium";
 const WEB_RESEARCH_EFFORT: ReasoningEffort = "medium";
 
 export interface StructuredRequest<Schema extends z.ZodType> {
+  /** Names the call in the activity log, e.g. "analyzeLabel". */
+  operation: string;
   schema: Schema;
   instructions: string;
   userContent: Anthropic.MessageParam["content"];
@@ -40,8 +45,15 @@ export function mapClaudeError(error: unknown): unknown {
   const isCredentialProblem =
     error instanceof Anthropic.AuthenticationError ||
     error instanceof Anthropic.PermissionDeniedError;
-  if (isCredentialProblem) return new WineIntelligenceError("invalidApiKey");
-  if (error instanceof Anthropic.APIError) return new WineIntelligenceError("unavailable");
+  if (isCredentialProblem) {
+    logger.error("Claude rejected the API key", { httpStatus: error.status });
+    return new WineIntelligenceError("invalidApiKey");
+  }
+  if (error instanceof Anthropic.APIError) {
+    // Only name and status: the SDK message can echo parts of the request.
+    logger.error("Claude request failed", { errorName: error.name, httpStatus: error.status });
+    return new WineIntelligenceError("unavailable");
+  }
   return error;
 }
 
@@ -54,6 +66,8 @@ export async function requestStructuredOutput<Schema extends z.ZodType>(
   let totalUsage: TokenUsage = { inputTokens: 0, outputTokens: 0 };
 
   for (let attempt = 1; attempt <= STRUCTURED_REQUEST_ATTEMPTS; attempt += 1) {
+    const startedAt = Date.now();
+    logger.info("Request sent", { operation: request.operation, model, attempt });
     const response = await client.messages.parse({
       model,
       max_tokens: MAXIMUM_OUTPUT_TOKENS,
@@ -64,6 +78,15 @@ export async function requestStructuredOutput<Schema extends z.ZodType>(
     totalUsage = addUsage(totalUsage, readUsage(response.usage));
 
     const isUsable = response.stop_reason !== "refusal" && response.parsed_output !== null;
+    const answerFields = {
+      operation: request.operation,
+      attempt,
+      stopReason: response.stop_reason,
+      durationMs: Date.now() - startedAt,
+      ...readUsage(response.usage),
+    };
+    if (isUsable) logger.info("Answer received", answerFields);
+    else logger.warn("Answer unusable", answerFields);
     // Safe: guarded by the null check above; the SDK cannot relate its runtime
     // JSON-schema output to this call's generic Schema, so a cast is unavoidable.
     if (isUsable) return { value: response.parsed_output as z.infer<Schema>, usage: totalUsage };
@@ -80,6 +103,30 @@ function buildResearchTurnMessages(
     messages.push({ role: "assistant", content: assistantContent });
   }
   return messages;
+}
+
+function extractSearchQueries(content: Anthropic.ContentBlock[]): string[] {
+  return content.flatMap((block) => {
+    if (block.type !== "server_tool_use" || block.name !== "web_search") return [];
+    const query = (block.input as { query?: unknown } | null)?.query;
+    return typeof query === "string" ? [query] : [];
+  });
+}
+
+function logResearchAnswer(
+  response: Anthropic.Message,
+  continuation: number,
+  startedAt: number,
+): void {
+  for (const query of extractSearchQueries(response.content)) {
+    logger.info("Web search", { query });
+  }
+  logger.info("Web research answer received", {
+    continuation,
+    stopReason: response.stop_reason,
+    durationMs: Date.now() - startedAt,
+    ...readUsage(response.usage),
+  });
 }
 
 function extractResearchNotes(assistantContent: Anthropic.ContentBlockParam[]): string {
@@ -106,6 +153,8 @@ export async function collectWebResearchNotes(
   let hasTurnFinished = false;
 
   for (let continuation = 0; continuation <= MAXIMUM_PAUSE_CONTINUATIONS; continuation += 1) {
+    const startedAt = Date.now();
+    logger.info("Web research sent", { model, continuation });
     const response = await client.messages.create({
       model,
       max_tokens: MAXIMUM_OUTPUT_TOKENS,
@@ -115,6 +164,7 @@ export async function collectWebResearchNotes(
       messages: buildResearchTurnMessages(researchPrompt, assistantContent),
     });
     totalUsage = addUsage(totalUsage, readUsage(response.usage));
+    logResearchAnswer(response, continuation, startedAt);
     // A new array, not a push: the previous request's `messages` still references
     // the old `assistantContent` array and must not see this response's content.
     assistantContent = [

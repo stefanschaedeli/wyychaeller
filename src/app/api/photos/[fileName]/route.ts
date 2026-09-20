@@ -11,8 +11,8 @@ function isFileMissingError(error: unknown): boolean {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
-  return handleRoute(async () => {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  return handleRoute(request, async () => {
     const { fileName } = await context.params;
     if (!isGeneratedPhotoFileName(fileName)) {
       throw new ApiError(400, "invalidInput", "Invalid photo name");

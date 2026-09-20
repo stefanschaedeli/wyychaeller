@@ -5,12 +5,15 @@ import { AnalysisRequestSchema, readJsonBody } from "@/server/http/request-schem
 import { getCurrentYear, toWineResponse } from "@/server/http/wine-response";
 import { RecordNotFoundError } from "@/server/repository/errors";
 import { getServiceContainer } from "@/server/service-container";
+import { createLogger } from "@/server/logging/logger";
+
+const logger = createLogger("cellar");
 
 export const dynamic = "force-dynamic";
 type RouteContext = { params: Promise<{ wineId: string }> };
 
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
-  return handleRoute(async () => {
+  return handleRoute(request, async () => {
     const wineId = parseRecordId((await context.params).wineId);
     const { mode } = AnalysisRequestSchema.parse(await readJsonBody(request));
     const container = getServiceContainer();
@@ -32,6 +35,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
       analysisError: null,
       duplicateOfWineId: null,
     });
+    logger.info("Analysis requested again", { wineId, mode });
     container.backgroundTasks.run(container.wineAnalysisService.analyzeWine(wineId, mode));
 
     const responseWine = {

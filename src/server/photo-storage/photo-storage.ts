@@ -7,6 +7,7 @@ import {
   MAXIMUM_PHOTO_UPLOAD_BYTES,
   PHOTO_JPEG_QUALITY,
 } from "@/domain/constants";
+import { createLogger } from "../logging/logger";
 
 export type InvalidPhotoReason = "tooLarge" | "notAnImage" | "invalidFileName";
 
@@ -27,16 +28,24 @@ export function isGeneratedPhotoFileName(fileName: string): boolean {
   return GENERATED_FILE_NAME_PATTERN.test(fileName);
 }
 
+const logger = createLogger("photo");
+
 export class PhotoStorage {
   constructor(private readonly photoDirectory: string) {}
 
   async storeLabelPhoto(uploadedBytes: Buffer): Promise<string> {
     if (uploadedBytes.byteLength > MAXIMUM_PHOTO_UPLOAD_BYTES) {
+      logger.warn("Photo refused: too large", { uploadedBytes: uploadedBytes.byteLength });
       throw new InvalidPhotoError("tooLarge");
     }
     const reencodedBytes = await this.reencodeAsJpeg(uploadedBytes);
     const fileName = `${randomUUID()}.jpg`;
     await writeFile(path.join(this.photoDirectory, fileName), reencodedBytes);
+    logger.info("Photo stored", {
+      fileName,
+      uploadedBytes: uploadedBytes.byteLength,
+      storedBytes: reencodedBytes.byteLength,
+    });
     return fileName;
   }
 
@@ -46,6 +55,7 @@ export class PhotoStorage {
 
   async deleteLabelPhoto(fileName: string): Promise<void> {
     await rm(this.resolveSafePath(fileName), { force: true });
+    logger.info("Photo deleted", { fileName });
   }
 
   async listStoredPhotoFileNames(): Promise<string[]> {
@@ -71,7 +81,7 @@ export class PhotoStorage {
         .toBuffer();
     } catch (error) {
       if (error instanceof InvalidPhotoError) throw error;
-      console.error("Photo re-encoding failed", error);
+      logger.error("Photo re-encoding failed", { error });
       throw new InvalidPhotoError("notAnImage");
     }
   }

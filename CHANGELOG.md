@@ -2,6 +2,12 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.2.0 — 2026-09-20
+
+- Activity log: the app now writes what it is doing to the container log (`docker logs weinkeller`, or the log tab in the Container Manager) — every API request with status and duration, each analysis step and status change, every Claude call with model, duration, stop reason and token usage, the web searches it runs, photo handling, cellar changes, the AI budget and a start-up banner with version and configuration.
+- New `LOG_LEVEL` variable: `info` (default), `debug` (adds healthcheck and photo requests), `warn`, `error` or `silent`. The API key, photo contents and AI answer texts are never logged; free text is quoted so it cannot forge log lines.
+- Failures while rendering pages are logged too (`onRequestError`).
+
 ## 1.1.0 — 2026-09-20
 
 - NAS deployment through GitHub Actions: every version tag builds a multi-architecture image (amd64 and arm64) and publishes it to the repository's private container registry, `ghcr.io/stefanschaedeli/wyychaeller`. The NAS pulls it from there; the manual archive upload remains as an offline alternative.

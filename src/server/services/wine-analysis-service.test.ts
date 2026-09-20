@@ -4,11 +4,13 @@ import path from "node:path";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IN_MEMORY_DATABASE, openDatabase } from "../database/connection";
+import { resetLogging } from "../logging/logger";
 import { PhotoStorage } from "../photo-storage/photo-storage";
 import { AiUsageRepository } from "../repository/ai-usage-repository";
 import { SettingsRepository } from "../repository/settings-repository";
 import { WineRepository } from "../repository/wine-repository";
 import { RecordedWineIntelligence } from "../wine-intelligence/recorded-wine-intelligence";
+import { captureLogLines } from "../testing/capture-log";
 import { WineIntelligenceError } from "../wine-intelligence/wine-intelligence";
 import { AiBudgetGuard } from "./ai-budget-guard";
 import { WineAnalysisService } from "./wine-analysis-service";
@@ -50,6 +52,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  resetLogging();
   await rm(photoDirectory, { recursive: true, force: true });
 });
 
@@ -188,5 +191,37 @@ describe("WineAnalysisService.analyzeWine", () => {
     await expect(service.analyzeWine(wineId, "full")).resolves.toBeUndefined();
 
     expect(wineRepository.findWineById(wineId)).toBeNull();
+  });
+});
+
+describe("WineAnalysisService activity log", () => {
+  it("narrates a successful analysis step by step", async () => {
+    const wineId = await createWineWithPhoto();
+    const lines = captureLogLines();
+
+    await service.analyzeWine(wineId, "full");
+
+    const analysisLines = lines.filter((line) => line.includes("[analysis]"));
+    expect(analysisLines[0]).toContain(`Analysis started wineId=${wineId} mode=full`);
+    expect(analysisLines[1]).toContain("Label read");
+    expect(analysisLines[1]).toContain('producer="Marchesi Antinori"');
+    expect(analysisLines[2]).toContain("Research stored");
+    expect(analysisLines[3]).toMatch(
+      /Analysis finished wineId=\d+ status=awaitingConfirmation durationMs=\d+$/,
+    );
+  });
+
+  it("reports a failed analysis with its code and the resulting status", async () => {
+    const wineId = await createWineWithPhoto();
+    vi.spyOn(wineIntelligence, "analyzeLabel").mockRejectedValue(
+      new WineIntelligenceError("unavailable"),
+    );
+    const lines = captureLogLines();
+
+    await service.analyzeWine(wineId, "full");
+
+    expect(lines.at(-1)).toMatch(
+      /WARN {2}\[analysis\] Analysis failed wineId=\d+ code=unavailable status=pending isRetryable=true/,
+    );
   });
 });
