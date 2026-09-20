@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { InvalidPhotoError } from "../photo-storage/photo-storage";
-import { RecordNotFoundError } from "../repository/wine-repository";
+import { RecordNotFoundError } from "../repository/errors";
 import { AiBudgetExceededError } from "../services/ai-budget-guard";
 import { WineIntelligenceError } from "../wine-intelligence/wine-intelligence";
 import { ApiError } from "./api-error";
@@ -81,6 +81,20 @@ describe("handleRoute", () => {
     const result = await runFailing(new ForeignApiError());
     expect(result.status).toBe(409);
     expect(result.body.error.code).toBe("analysisRunning");
+  });
+
+  it("never forwards a foreign ApiError's message to the response body", async () => {
+    class ForeignApiError extends Error {
+      readonly status = 409;
+      readonly code = "analysisRunning";
+      constructor() {
+        super("/app/secret/path");
+        this.name = "ApiError";
+      }
+    }
+    const result = await runFailing(new ForeignApiError());
+    expect(result.status).toBe(409);
+    expect(JSON.stringify(result.body)).not.toContain("secret");
   });
 
   it("falls back to 500 unexpected for a foreign ApiError with a malformed status", async () => {

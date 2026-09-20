@@ -36,7 +36,7 @@ function toApiErrorFromForeignApiError(error: Error): ApiError | null {
   const status = readProperty(error, "status");
   const code = readStringProperty(error, "code");
   if (typeof status !== "number" || status < 400 || status > 599 || code === null) return null;
-  return new ApiError(status, code, error.message);
+  return new ApiError(status, code, "Request failed");
 }
 
 function toApiErrorFromInvalidPhotoError(error: Error): ApiError {

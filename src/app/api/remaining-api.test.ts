@@ -55,6 +55,9 @@ describe("photos", () => {
     const traversal = await getPhoto(new Request("http://localhost"), {
       params: Promise.resolve({ fileName: "../weinkeller.db" }),
     });
+    // Next.js decodes route params before the handler ever sees them, so this call
+    // exercises the name guard on both the raw and the already-decoded form; real
+    // URL decoding of an incoming request is covered by the production curl smoke check.
     const encodedTraversal = await getPhoto(new Request("http://localhost"), {
       params: Promise.resolve({ fileName: "..%2Fweinkeller.db" }),
     });
