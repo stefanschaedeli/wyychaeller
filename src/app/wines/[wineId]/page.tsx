@@ -10,19 +10,18 @@ import { ConfirmationForm } from "@/components/wine/confirmation-form";
 import { DuplicatePanel } from "@/components/wine/duplicate-panel";
 import { apiClient } from "@/lib/api-client";
 import { formatWineTitle } from "@/lib/german-labels";
+import { parseWineIdParameter } from "@/lib/route-parameters";
 import { ANALYSIS_POLL_INTERVAL_MILLISECONDS, useApiResource } from "@/lib/use-api-resource";
 import type { TastingResponse, WineResponse } from "@/shared/api-contract";
 
-type WineDetails = { wine: WineResponse; tastings: TastingResponse[] };
+type WineDetailsData = { wine: WineResponse; tastings: TastingResponse[] };
 
-function isWaitingForAnalysis(details: WineDetails): boolean {
+function isWaitingForAnalysis(details: WineDetailsData): boolean {
   return ["pending", "analyzing"].includes(details.wine.analysisStatus);
 }
 
-export default function WinePage() {
-  const wineIdParameter = useParams<{ wineId: string }>().wineId;
-  const wineId = Number(wineIdParameter);
-  const isWineIdValid = !Number.isNaN(wineId);
+/** Only the data-loading hooks live here, so they never run for an invalid wine id. */
+function WineDetails({ wineId }: { wineId: number }) {
   const router = useRouter();
   const loadWine = useCallback(() => apiClient.getWine(wineId), [wineId]);
   const details = useApiResource(loadWine, {
@@ -31,9 +30,9 @@ export default function WinePage() {
   });
   const goToCellar = useCallback(() => router.push("/"), [router]);
 
-  if (!isWineIdValid) return <ErrorNotice errorCode="notFound" />;
-  if (details.errorCode)
+  if (details.errorCode) {
     return <ErrorNotice errorCode={details.errorCode} onRetry={details.reload} />;
+  }
   if (details.data === null) return <p className="text-ink-muted">Wird geladen …</p>;
   const { wine } = details.data;
 
@@ -67,4 +66,10 @@ export default function WinePage() {
       )}
     </>
   );
+}
+
+export default function WinePage() {
+  const wineId = parseWineIdParameter(useParams<{ wineId: string }>().wineId);
+  if (wineId === null) return <ErrorNotice errorCode="notFound" />;
+  return <WineDetails wineId={wineId} />;
 }

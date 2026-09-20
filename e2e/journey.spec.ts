@@ -43,3 +43,15 @@ test("captures a wine from a label photo and confirms it", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: /Tignanello 2018/ })).toContainText("6×");
 });
+
+test("never calls the API for a non-numeric wine id", async ({ page }) => {
+  const wineApiRequests: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/api/wines/")) wineApiRequests.push(request.url());
+  });
+
+  await page.goto("/wines/abc");
+
+  await expect(page.getByText("Dieser Eintrag existiert nicht mehr.")).toBeVisible();
+  expect(wineApiRequests).toEqual([]);
+});

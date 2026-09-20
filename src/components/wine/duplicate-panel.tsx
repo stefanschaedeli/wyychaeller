@@ -4,14 +4,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { TextField } from "@/components/shared/text-field";
+import { MINIMUM_NEW_BOTTLE_COUNT } from "@/domain/constants";
 import { apiClient } from "@/lib/api-client";
 import { parseBottleCount } from "@/lib/form-values";
 import { formatWineTitle } from "@/lib/german-labels";
 import { toErrorCode } from "@/lib/use-api-resource";
 import type { WineResponse } from "@/shared/api-contract";
 import { DeleteWineButton } from "./delete-wine-button";
-
-const MINIMUM_MERGE_BOTTLE_COUNT = 1;
 
 export interface DuplicatePanelProps {
   wine: WineResponse;
@@ -24,7 +23,7 @@ export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProp
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
   async function mergeIntoExistingWine() {
-    const bottleCount = parseBottleCount(bottleCountText, MINIMUM_MERGE_BOTTLE_COUNT);
+    const bottleCount = parseBottleCount(bottleCountText, MINIMUM_NEW_BOTTLE_COUNT);
     if (bottleCount === null) {
       setErrorCode("invalidInput");
       return;

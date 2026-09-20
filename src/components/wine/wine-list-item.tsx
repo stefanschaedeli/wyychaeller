@@ -2,7 +2,12 @@ import Link from "next/link";
 import { MaturityBadge } from "@/components/shared/maturity-badge";
 import { ScoreBadge } from "@/components/shared/score-badge";
 import { WinePhoto } from "@/components/shared/wine-photo";
-import { ANALYSIS_STATUS_LABELS, formatWineOrigin, formatWineTitle } from "@/lib/german-labels";
+import {
+  ANALYSIS_STATUS_LABELS,
+  formatBottleCount,
+  formatWineOrigin,
+  formatWineTitle,
+} from "@/lib/german-labels";
 import type { WineResponse } from "@/shared/api-contract";
 
 function WineListItemBadges({ wine }: { wine: WineResponse }) {
@@ -33,7 +38,7 @@ export function WineListItem({ wine }: { wine: WineResponse }) {
           </div>
         </div>
         {wine.analysisStatus === "complete" && (
-          <p className="font-sans text-sm" aria-label={`${wine.bottleCount} Flaschen`}>
+          <p className="font-sans text-sm" aria-label={formatBottleCount(wine.bottleCount)}>
             {wine.bottleCount}×
           </p>
         )}

@@ -11,6 +11,8 @@ export const PHOTO_JPEG_QUALITY = 85;
 export const MAXIMUM_SHORT_TEXT_LENGTH = 200;
 export const MAXIMUM_LONG_TEXT_LENGTH = 2000;
 export const MAXIMUM_BOTTLE_COUNT = 9999;
+// Adding wine to the cellar (confirming or merging) needs at least one bottle.
+export const MINIMUM_NEW_BOTTLE_COUNT = 1;
 
 export const MAXIMUM_DISH_RECOMMENDATIONS = 3;
 export const AI_REQUESTS_PER_MINUTE = 20;

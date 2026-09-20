@@ -3,13 +3,12 @@
 import { useState, type FormEvent } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { TextField } from "@/components/shared/text-field";
+import { MINIMUM_NEW_BOTTLE_COUNT } from "@/domain/constants";
 import { apiClient } from "@/lib/api-client";
 import { parseBottleCount, parseOptionalNumber, toNullableText } from "@/lib/form-values";
 import { toErrorCode } from "@/lib/use-api-resource";
 import type { WineResponse } from "@/shared/api-contract";
 import { IdentityFields, toIdentityFormValues, toIdentityRequest } from "./identity-fields";
-
-const MINIMUM_CONFIRMATION_BOTTLE_COUNT = 1;
 
 export interface ConfirmationFormProps {
   wine: WineResponse;
@@ -26,7 +25,7 @@ export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
 
   async function confirmWine(event: FormEvent) {
     event.preventDefault();
-    const bottleCount = parseBottleCount(bottleCountText, MINIMUM_CONFIRMATION_BOTTLE_COUNT);
+    const bottleCount = parseBottleCount(bottleCountText, MINIMUM_NEW_BOTTLE_COUNT);
     if (bottleCount === null) {
       setErrorCode("invalidInput");
       return;
