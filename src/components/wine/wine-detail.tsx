@@ -12,7 +12,7 @@ import {
   formatWineTitle,
   WINE_TYPE_LABELS,
 } from "@/lib/german-labels";
-import { toErrorCode } from "@/lib/use-api-resource";
+import { runUserAction } from "@/lib/run-user-action";
 import type { TastingResponse, WineResponse } from "@/shared/api-contract";
 import { CellarEditForm } from "./cellar-edit-form";
 import { DeleteWineButton } from "./delete-wine-button";
@@ -51,10 +51,11 @@ export function WineDetail({ wine, tastings, currency, onChanged, onDeleted }: W
     onChanged();
   };
   const startReassessment = () =>
-    apiClient
-      .startAnalysis(wine.id, "researchOnly")
-      .then(onChanged)
-      .catch((error: unknown) => setErrorCode(toErrorCode(error)));
+    runUserAction(() => apiClient.startAnalysis(wine.id, "researchOnly"), {
+      onStart: () => setErrorCode(null),
+      onSuccess: onChanged,
+      onError: setErrorCode,
+    });
 
   return (
     <article className="grid gap-6">
