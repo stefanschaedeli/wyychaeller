@@ -16,3 +16,7 @@ export const MINIMUM_NEW_BOTTLE_COUNT = 1;
 
 export const MAXIMUM_DISH_RECOMMENDATIONS = 3;
 export const AI_REQUESTS_PER_MINUTE = 20;
+
+// Must stay in sync with the `.min(2)` on `DishRequestSchema` in
+// `src/server/http/request-schemas.ts` (not touched from the UI layer).
+export const MINIMUM_DISH_TEXT_LENGTH = 2;

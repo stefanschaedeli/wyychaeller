@@ -85,3 +85,21 @@ test("edits cellar data", async ({ page }) => {
 
   await expect(page.getByText("Regal 1")).toBeVisible();
 });
+
+test("lists nothing urgent for a young cellar", async ({ page }) => {
+  await page.goto("/soon");
+  await expect(page.getByRole("heading", { name: "Nichts eilt" })).toBeVisible();
+});
+
+test("recommends wines for a dish and reuses the stored answer", async ({ page }) => {
+  await page.goto("/pairing");
+  await page.getByLabel("Was gibt es zu essen?").fill("Rindsfilet mit Morcheln");
+  await page.getByRole("button", { name: "Wein empfehlen" }).click();
+
+  await expect(page.getByRole("link", { name: /Tignanello 2018/ })).toBeVisible();
+  await expect(page.getByText("Neue Empfehlung")).toBeVisible();
+
+  await page.reload();
+  await page.getByRole("button", { name: "Rindsfilet mit Morcheln" }).click();
+  await expect(page.getByText("Gespeicherte Antwort, ohne KI-Kosten")).toBeVisible();
+});
