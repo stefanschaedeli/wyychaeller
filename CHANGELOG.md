@@ -2,6 +2,12 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.3.0 — 2026-09-21
+
+- Google Gemini as a second, much cheaper AI provider: set `WINE_INTELLIGENCE_MODE=gemini` and `GEMINI_API_KEY` (paid-tier key from Google AI Studio). Label reading, web research with Google Search and dish pairing all run on `gemini-3.7-flash` by default (`GEMINI_MODEL` changes it). Measured on two test wines: about 1 Rappen per captured wine instead of 8–16 with `claude-sonnet-5`, because Google Search is free up to 5,000 searches a month and its results are not billed as tokens.
+- Claude stays the default, so existing installations keep working without any change; `WINE_INTELLIGENCE_MODE=claude` switches back at any time.
+- The start-up banner and the missing-key messages name the active provider's settings.
+
 ## 1.2.0 — 2026-09-20
 
 - Activity log: the app now writes what it is doing to the container log (`docker logs weinkeller`, or the log tab in the Container Manager) — every API request with status and duration, each analysis step and status change, every Claude call with model, duration, stop reason and token usage, the web searches it runs, photo handling, cellar changes, the AI budget and a start-up banner with version and configuration.
