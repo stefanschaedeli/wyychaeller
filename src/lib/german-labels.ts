@@ -31,8 +31,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   labelUnreadable: "Auf dem Foto wurde kein Weinetikett erkannt.",
   invalidResponse: "Die KI hat keine brauchbare Antwort geliefert.",
   unavailable: "Der KI-Dienst ist gerade nicht erreichbar. Das Foto ist gespeichert.",
-  missingApiKey: "Es ist kein API-Schlüssel hinterlegt. Trage ANTHROPIC_API_KEY im Container ein.",
-  invalidApiKey: "Der API-Schlüssel wurde abgelehnt. Prüfe ANTHROPIC_API_KEY im Container.",
+  missingApiKey:
+    "Es ist kein API-Schlüssel hinterlegt. Trage ANTHROPIC_API_KEY oder GEMINI_API_KEY im Container ein.",
+  invalidApiKey:
+    "Der API-Schlüssel wurde abgelehnt. Prüfe ANTHROPIC_API_KEY bzw. GEMINI_API_KEY im Container.",
   budgetExceeded: "Die monatliche Obergrenze für KI-Aufrufe ist erreicht (siehe Einstellungen).",
   rateLimited: "Zu viele KI-Anfragen in kurzer Zeit. Bitte warte eine Minute.",
   invalidPhoto: "Diese Datei ist kein unterstütztes Bild (JPEG, PNG oder WebP).",

@@ -21,11 +21,11 @@ Eine kleine, selbst gehostete Web-App, um die Weine im eigenen Keller zu erfasse
 | Hosting | Synology NAS, Container Manager (Docker). Test lokal mit Docker Desktop (macOS). |
 | Nutzer | Mehrere Mobilgeräte im Haushalt, ein gemeinsamer Keller. |
 | Zugriff | Nur Heimnetz, kein Login. Zugriff von unterwegs über VPN/Tailscale, ausserhalb der App. |
-| KI | Claude API (Anthropic): Bildanalyse und Websuche-Tool. Modell per Umgebungsvariable `CLAUDE_MODEL`. |
+| KI | Claude API (Anthropic) oder Gemini API (Google), wählbar über `WINE_INTELLIGENCE_MODE`: Bildanalyse und Websuche. Modell per `CLAUDE_MODEL` bzw. `GEMINI_MODEL`. Gemini kam mit Version 1.3.0 aus Kostengründen dazu. |
 | Sprache | Oberfläche Deutsch. Code, Bezeichner und Commits Englisch. |
 | Währung | CHF (in `settings` änderbar). |
 
-**Nicht im Umfang (YAGNI):** Benutzerkonten, mehrere Keller, Verfolgung einzelner Flaschen, Barcode-Scan, Import/Export, Offline-Modus, automatische Hintergrund-Aktualisierungen, austauschbare KI-Anbieter.
+**Nicht im Umfang (YAGNI):** Benutzerkonten, mehrere Keller, Verfolgung einzelner Flaschen, Barcode-Scan, Import/Export, Offline-Modus, automatische Hintergrund-Aktualisierungen, weitere KI-Anbieter über Claude und Gemini hinaus.
 
 ## 3. Architektur
 
@@ -36,7 +36,7 @@ Eine Next.js-Anwendung (App Router, TypeScript strict) in einem Container. Daten
 | UI (`src/app`, `src/components`) | Anzeigen und Eingaben. Keine Geschäftslogik. | API-Routen |
 | API-Routen (`src/app/api`) | Eingaben validieren, Repository oder Dienste aufrufen. | Repository, Dienste |
 | Repository (`src/server/repository`) | Einziger Ort mit Datenbankzugriff. | SQLite |
-| KI-Dienst (`src/server/wine-intelligence`) | Einziger Ort, der die Claude API aufruft. | Claude API |
+| KI-Dienst (`src/server/wine-intelligence`) | Einziger Ort, der einen KI-Dienst (Claude oder Gemini) aufruft. | Claude API, Gemini API |
 | Foto-Ablage (`src/server/photo-storage`) | Fotos prüfen, verkleinern, speichern, ausliefern. | Dateisystem |
 | Domänenlogik (`src/domain`) | Reine Funktionen: Trinkreife, Bestand, Duplikat-Erkennung. | nichts |
 

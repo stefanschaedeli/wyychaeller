@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { createLogger } from "../logging/logger";
 import { WEB_RESEARCH_INSTRUCTIONS } from "./prompts";
 import {
+  addUsage,
   WineIntelligenceError,
   type IntelligenceResult,
   type TokenUsage,
@@ -27,13 +28,6 @@ export interface StructuredRequest<Schema extends z.ZodType> {
   instructions: string;
   userContent: Anthropic.MessageParam["content"];
   effort: ReasoningEffort;
-}
-
-export function addUsage(first: TokenUsage, second: TokenUsage): TokenUsage {
-  return {
-    inputTokens: first.inputTokens + second.inputTokens,
-    outputTokens: first.outputTokens + second.outputTokens,
-  };
 }
 
 function readUsage(usage: Anthropic.Usage): TokenUsage {

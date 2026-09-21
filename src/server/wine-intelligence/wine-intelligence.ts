@@ -6,6 +6,13 @@ export interface TokenUsage {
   outputTokens: number;
 }
 
+export function addUsage(first: TokenUsage, second: TokenUsage): TokenUsage {
+  return {
+    inputTokens: first.inputTokens + second.inputTokens,
+    outputTokens: first.outputTokens + second.outputTokens,
+  };
+}
+
 export interface IntelligenceResult<T> {
   value: T;
   usage: TokenUsage;

@@ -11,11 +11,12 @@ const logger = createLogger("startup");
 export async function initializeServer(): Promise<void> {
   const environment = readEnvironment();
   const { dataDirectory } = environment;
+  const isGeminiMode = environment.wineIntelligenceMode === "gemini";
   logger.info("Weinkeller starting", {
     version: packageJson.version,
-    model: environment.claudeModel,
+    model: isGeminiMode ? environment.geminiModel : environment.claudeModel,
     intelligenceMode: environment.wineIntelligenceMode,
-    hasApiKey: environment.anthropicApiKey !== null,
+    hasApiKey: (isGeminiMode ? environment.geminiApiKey : environment.anthropicApiKey) !== null,
     dataDirectory,
     logLevel: environment.logLevel,
   });

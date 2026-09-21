@@ -43,7 +43,7 @@ function AiUsageCard({ summary }: { summary: CellarSummaryResponse }) {
       {!summary.isAiConfigured && (
         <p className="mt-1 text-alert">
           Kein API-Schlüssel hinterlegt. Erfassen per Foto ist erst nach dem Eintragen von
-          ANTHROPIC_API_KEY möglich.
+          ANTHROPIC_API_KEY oder GEMINI_API_KEY möglich.
         </p>
       )}
       <p className="mt-2 text-sm text-ink-muted">

@@ -1,11 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenAI } from "@google/genai";
 import type { Environment } from "../config/environment";
 import { createLogger } from "../logging/logger";
 import { ClaudeWineIntelligence } from "./claude-wine-intelligence";
+import { GeminiWineIntelligence } from "./gemini-wine-intelligence";
 import { RecordedWineIntelligence } from "./recorded-wine-intelligence";
 import { WineIntelligenceError, type WineIntelligence } from "./wine-intelligence";
 
-const logger = createLogger("claude");
+const logger = createLogger("intelligence");
 
 const REQUEST_TIMEOUT_MILLISECONDS = 5 * 60 * 1000;
 
@@ -27,18 +29,33 @@ export interface CreatedWineIntelligence {
   isConfigured: boolean;
 }
 
-export function createWineIntelligence(
-  environment: Environment,
-  currency: string,
-): CreatedWineIntelligence {
-  if (environment.wineIntelligenceMode === "recorded") {
-    logger.info("Using recorded answers, Claude is never called");
-    return { wineIntelligence: new RecordedWineIntelligence(), isConfigured: true };
-  }
-  if (environment.anthropicApiKey === null) {
-    logger.warn("ANTHROPIC_API_KEY is missing, every analysis will fail until it is set");
-    return { wineIntelligence: new UnconfiguredWineIntelligence(), isConfigured: false };
-  }
+function getCurrentYear(): number {
+  return new Date().getFullYear();
+}
+
+function createUnconfigured(missingVariableName: string): CreatedWineIntelligence {
+  logger.warn(`${missingVariableName} is missing, every analysis will fail until it is set`);
+  return { wineIntelligence: new UnconfiguredWineIntelligence(), isConfigured: false };
+}
+
+function createGemini(environment: Environment, currency: string): CreatedWineIntelligence {
+  if (environment.geminiApiKey === null) return createUnconfigured("GEMINI_API_KEY");
+  const client = new GoogleGenAI({
+    apiKey: environment.geminiApiKey,
+    httpOptions: { timeout: REQUEST_TIMEOUT_MILLISECONDS },
+  });
+  const wineIntelligence = new GeminiWineIntelligence(
+    client,
+    environment.geminiModel,
+    getCurrentYear,
+    currency,
+  );
+  logger.info("Using Gemini", { model: environment.geminiModel });
+  return { wineIntelligence, isConfigured: true };
+}
+
+function createClaude(environment: Environment, currency: string): CreatedWineIntelligence {
+  if (environment.anthropicApiKey === null) return createUnconfigured("ANTHROPIC_API_KEY");
   const client = new Anthropic({
     apiKey: environment.anthropicApiKey,
     timeout: REQUEST_TIMEOUT_MILLISECONDS,
@@ -46,9 +63,21 @@ export function createWineIntelligence(
   const wineIntelligence = new ClaudeWineIntelligence(
     client,
     environment.claudeModel,
-    () => new Date().getFullYear(),
+    getCurrentYear,
     currency,
   );
   logger.info("Using Claude", { model: environment.claudeModel });
   return { wineIntelligence, isConfigured: true };
+}
+
+export function createWineIntelligence(
+  environment: Environment,
+  currency: string,
+): CreatedWineIntelligence {
+  if (environment.wineIntelligenceMode === "recorded") {
+    logger.info("Using recorded answers, no AI service is ever called");
+    return { wineIntelligence: new RecordedWineIntelligence(), isConfigured: true };
+  }
+  if (environment.wineIntelligenceMode === "gemini") return createGemini(environment, currency);
+  return createClaude(environment, currency);
 }

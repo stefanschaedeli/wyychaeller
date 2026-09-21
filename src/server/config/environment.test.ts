@@ -11,6 +11,8 @@ describe("readEnvironment", () => {
       dataDirectory: "./data",
       anthropicApiKey: null,
       claudeModel: "claude-sonnet-5",
+      geminiApiKey: null,
+      geminiModel: "gemini-3.7-flash",
       wineIntelligenceMode: "claude",
       logLevel: "info",
     });
@@ -36,6 +38,18 @@ describe("readEnvironment", () => {
     expect(environment.claudeModel).toBe("claude-opus-5");
     expect(environment.wineIntelligenceMode).toBe("recorded");
     expect(environment.logLevel).toBe("debug");
+  });
+
+  it("reads the Gemini settings", () => {
+    const environment = readEnvironment({
+      NODE_ENV: TEST_NODE_ENV,
+      GEMINI_API_KEY: " gemini-key ",
+      GEMINI_MODEL: "gemini-3.5-flash-lite",
+      WINE_INTELLIGENCE_MODE: "gemini",
+    });
+    expect(environment.geminiApiKey).toBe("gemini-key");
+    expect(environment.geminiModel).toBe("gemini-3.5-flash-lite");
+    expect(environment.wineIntelligenceMode).toBe("gemini");
   });
 
   it("rejects an unknown intelligence mode", () => {

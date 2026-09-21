@@ -1,5 +1,5 @@
 # For Synology Container Manager: Projekt → Erstellen → this file.
-# Put ANTHROPIC_API_KEY into a file named ".env" in the same project folder.
+# Put ANTHROPIC_API_KEY (or GEMINI_API_KEY plus WINE_INTELLIGENCE_MODE=gemini) into a file named ".env" in the same project folder.
 # The image is built by GitHub Actions (.github/workflows/release-image.yml); the NAS needs a
 # registry login for ghcr.io with a token that has only "read:packages" (see README section 4).
 services:
@@ -12,6 +12,8 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.7-flash}
       WINE_INTELLIGENCE_MODE: ${WINE_INTELLIGENCE_MODE:-claude}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     volumes:

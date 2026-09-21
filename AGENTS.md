@@ -7,7 +7,7 @@ Spec and implementation plans live under `docs/superpowers/` (`docs/superpowers/
 ## Layering rules
 
 - UI (`src/components`, `src/app` pages) never imports `@/server/*`; it uses `@/lib/api-client`, `@/shared/api-contract` and `@/domain/*` only.
-- Only `src/server/wine-intelligence` imports the Anthropic SDK.
+- Only `src/server/wine-intelligence` imports an AI SDK (`@anthropic-ai/sdk`, `@google/genai`); Claude and Gemini both implement its `WineIntelligence` interface, chosen by `WINE_INTELLIGENCE_MODE`.
 - Only `src/server/database` and `src/server/repository` import Drizzle (or `better-sqlite3`).
 - Never use `instanceof` on project error classes in route-level code — Turbopack duplicates classes across chunks, so errors are recognised by name instead, in `src/server/http/handle-route.ts`.
 - No magic values: named constants live in `src/domain/constants.ts`.

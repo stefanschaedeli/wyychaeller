@@ -1,9 +1,10 @@
-import type Anthropic from "@anthropic-ai/sdk";
+import type { GoogleGenAI } from "@google/genai";
 import {
   collectWebResearchNotes,
-  mapClaudeError,
+  mapGeminiError,
   requestStructuredOutput,
-} from "./claude-requests";
+  ThinkingLevel,
+} from "./gemini-requests";
 import {
   buildDishPairingPrompt,
   buildStructuringPrompt,
@@ -34,9 +35,9 @@ import {
   type WineIntelligence,
 } from "./wine-intelligence";
 
-export class ClaudeWineIntelligence implements WineIntelligence {
+export class GeminiWineIntelligence implements WineIntelligence {
   constructor(
-    private readonly client: Anthropic,
+    private readonly client: GoogleGenAI,
     private readonly model: string,
     private readonly getCurrentYear: () => number,
     private readonly currency: string,
@@ -48,13 +49,10 @@ export class ClaudeWineIntelligence implements WineIntelligence {
         operation: "analyzeLabel",
         schema: LabelReadingSchema,
         instructions: LABEL_READING_INSTRUCTIONS,
-        effort: "low",
-        userContent: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: photo.mediaType, data: photo.base64Data },
-          },
-          { type: "text", text: "Read this wine label." },
+        thinkingLevel: ThinkingLevel.LOW,
+        contents: [
+          { inlineData: { mimeType: photo.mediaType, data: photo.base64Data } },
+          "Read this wine label.",
         ],
       }),
     );
@@ -76,8 +74,8 @@ export class ClaudeWineIntelligence implements WineIntelligence {
         operation: "researchWine",
         schema: WineResearchSchema,
         instructions: RESEARCH_STRUCTURING_INSTRUCTIONS,
-        effort: "low",
-        userContent: buildStructuringPrompt(identity, notes.value),
+        thinkingLevel: ThinkingLevel.LOW,
+        contents: buildStructuringPrompt(identity, notes.value),
       });
       return {
         value: sanitizeWineResearch(structured.value, currentYear),
@@ -95,8 +93,8 @@ export class ClaudeWineIntelligence implements WineIntelligence {
         operation: "recommendWinesForDish",
         schema: DishRecommendationListSchema,
         instructions: DISH_PAIRING_INSTRUCTIONS,
-        effort: "medium",
-        userContent: buildDishPairingPrompt(dish, cellarWines),
+        thinkingLevel: ThinkingLevel.MEDIUM,
+        contents: buildDishPairingPrompt(dish, cellarWines),
       }),
     );
     const validWineIds = new Set(cellarWines.map((wine) => wine.wineId));
@@ -110,7 +108,7 @@ export class ClaudeWineIntelligence implements WineIntelligence {
     try {
       return await operation();
     } catch (error) {
-      throw mapClaudeError(error);
+      throw mapGeminiError(error);
     }
   }
 }

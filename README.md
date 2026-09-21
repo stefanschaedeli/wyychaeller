@@ -34,6 +34,7 @@ Mit dem Standardmodell `claude-sonnet-5` ist pro erfasstem Wein (Etikett lesen u
 
 - `claude-sonnet-5` (Standard): günstig, für bekannte Weine meist ausreichend.
 - `claude-opus-5`: beste Erkennung und Recherche, auch bei seltenen Weinen. Umstellen über `CLAUDE_MODEL=claude-opus-5` in der `.env`. Bereits erfasste Weine bleiben unverändert; «Neu bewerten» verwendet das jeweils eingestellte Modell.
+- Google Gemini als günstigere Alternative: `WINE_INTELLIGENCE_MODE=gemini` und `GEMINI_API_KEY=…` (kostenpflichtiger Schlüssel aus Google AI Studio) in der `.env` setzen. Standardmodell ist `gemini-3.7-flash`, umstellbar über `GEMINI_MODEL`. Geschätzt rund 2–4 Rappen pro erfasstem Wein: Die Google-Suche ist bis 5000 Suchanfragen pro Monat kostenlos, und die Suchergebnisse werden nicht als Tokens verrechnet. Der Listenpreis von `gemini-3.7-flash` verdoppelt sich laut Google am 1. Januar 2027. `ANTHROPIC_API_KEY` wird in diesem Modus nicht benötigt; zurück zu Claude geht es mit `WINE_INTELLIGENCE_MODE=claude`.
 - Die monatliche Obergrenze in «Mehr → Einstellungen» schützt vor Überraschungen.
 
 Zum kostenlosen Ausprobieren ohne jeden API-Aufruf steht der Modus `WINE_INTELLIGENCE_MODE=recorded` zur Verfügung (siehe Abschnitt 3): Er liefert aufgezeichnete, realistische Antworten statt echter KI-Aufrufe.

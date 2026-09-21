@@ -49,7 +49,10 @@ const eslintConfig = defineConfig([
         "error",
         {
           patterns: [
-            { group: ["@anthropic-ai/*"], message: "Only wine-intelligence may call Claude." },
+            {
+              group: ["@anthropic-ai/*", "@google/genai"],
+              message: "Only wine-intelligence may call an AI service.",
+            },
           ],
         },
       ],
@@ -66,7 +69,10 @@ const eslintConfig = defineConfig([
         {
           patterns: [
             { group: ["@/server/*", "@/server/**"], message: "UI must go through the API routes." },
-            { group: ["@anthropic-ai/*"], message: "Only wine-intelligence may call Claude." },
+            {
+              group: ["@anthropic-ai/*", "@google/genai"],
+              message: "Only wine-intelligence may call an AI service.",
+            },
           ],
         },
       ],
