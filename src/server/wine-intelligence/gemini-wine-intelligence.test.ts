@@ -66,6 +66,24 @@ describe("GeminiWineIntelligence.analyzeLabel", () => {
     expect(request.config.responseMimeType).toBe("application/json");
     expect(request.config.responseJsonSchema.properties.producer).toBeDefined();
     expect(request.config.tools).toBeUndefined();
+    expect(request.config.thinkingConfig).toEqual({ thinkingLevel: "LOW" });
+  });
+
+  it("sends no thinking level to Gemini 2.x models, which reject it", async () => {
+    const olderModel = new GeminiWineIntelligence(
+      fakeClient,
+      "gemini-2.5-flash",
+      () => 2026,
+      "CHF",
+    );
+    generateContent
+      .mockResolvedValueOnce({ text: "Falstaff 95.", usageMetadata })
+      .mockResolvedValueOnce(jsonAnswer(researchOutput));
+
+    await olderModel.researchWine(identity);
+
+    expect(generateContent.mock.calls[0][0].config.thinkingConfig).toBeUndefined();
+    expect(generateContent.mock.calls[1][0].config.thinkingConfig).toBeUndefined();
   });
 
   it("retries once when the answer does not match the schema, then fails", async () => {

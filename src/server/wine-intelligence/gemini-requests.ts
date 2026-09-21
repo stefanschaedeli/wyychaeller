@@ -4,6 +4,7 @@ import {
   type ContentListUnion,
   type GenerateContentResponse,
   type GoogleGenAI,
+  type ThinkingConfig,
 } from "@google/genai";
 import { z } from "zod";
 import { createLogger } from "../logging/logger";
@@ -25,6 +26,8 @@ const INVALID_KEY_REASON = "API_KEY_INVALID";
 const CREDENTIAL_HTTP_STATUSES = [401, 403];
 /** The SDK wraps network failures in a plain Error with this message ending. */
 const CONNECTION_FAILURE_MESSAGE_ENDING = "sending request";
+/** Gemini 2.x answers a thinking level with HTTP 400; it only knows token budgets. */
+const MODEL_PREFIX_WITHOUT_THINKING_LEVELS = "gemini-2.";
 
 export { ThinkingLevel };
 
@@ -66,6 +69,14 @@ export function mapGeminiError(error: unknown): unknown {
   return error;
 }
 
+function buildThinkingConfig(
+  model: string,
+  thinkingLevel: ThinkingLevel,
+): ThinkingConfig | undefined {
+  if (model.startsWith(MODEL_PREFIX_WITHOUT_THINKING_LEVELS)) return undefined;
+  return { thinkingLevel };
+}
+
 function buildResponseJsonSchema(schema: z.ZodType): Record<string, unknown> {
   // Gemini accepts a JSON Schema subset that does not include the "$schema" keyword.
   const { $schema: _dialect, ...jsonSchema } = z.toJSONSchema(schema);
@@ -104,7 +115,7 @@ export async function requestStructuredOutput<Schema extends z.ZodType>(
         maxOutputTokens: MAXIMUM_OUTPUT_TOKENS,
         responseMimeType: "application/json",
         responseJsonSchema: buildResponseJsonSchema(request.schema),
-        thinkingConfig: { thinkingLevel: request.thinkingLevel },
+        thinkingConfig: buildThinkingConfig(model, request.thinkingLevel),
       },
     });
     totalUsage = addUsage(totalUsage, readUsage(response));
@@ -141,7 +152,7 @@ export async function collectWebResearchNotes(
       systemInstruction: WEB_RESEARCH_INSTRUCTIONS,
       maxOutputTokens: MAXIMUM_OUTPUT_TOKENS,
       tools: [{ googleSearch: {} }],
-      thinkingConfig: { thinkingLevel: WEB_RESEARCH_THINKING_LEVEL },
+      thinkingConfig: buildThinkingConfig(model, WEB_RESEARCH_THINKING_LEVEL),
     },
   });
 
