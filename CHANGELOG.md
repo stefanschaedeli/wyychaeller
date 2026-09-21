@@ -2,6 +2,10 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.3.1 — 2026-09-21
+
+- README: Google Gemini and Claude are now presented side by side as equal choices, with a comparison table, a step-by-step guide to getting each API key (including the paid-tier step Gemini needs for web search), how to switch providers, and a troubleshooting entry for a free-tier Gemini key.
+
 ## 1.3.0 — 2026-09-21
 
 - Google Gemini as a second, much cheaper AI provider: set `WINE_INTELLIGENCE_MODE=gemini` and `GEMINI_API_KEY` (paid-tier key from Google AI Studio). Label reading, web research with Google Search and dish pairing all run on `gemini-3.7-flash` by default (`GEMINI_MODEL` changes it). Measured on two test wines: about 1 Rappen per captured wine instead of 8–16 with `claude-sonnet-5`, because Google Search is free up to 5,000 searches a month and its results are not billed as tokens.
