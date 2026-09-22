@@ -6,5 +6,4 @@ node_modules
 !.env.example
 data
 dist
-docs
 .superpowers

@@ -2,6 +2,5 @@
 node_modules
 drizzle
 data
-docs
 .superpowers
 package-lock.json

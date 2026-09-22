@@ -2,6 +2,14 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.3.2 — 2026-09-22
+
+- The repository is public under the MIT license (`LICENSE`).
+- English `README.md` with the German original moved to `README.de.md`.
+- The container image `ghcr.io/stefanschaedeli/wyychaeller` is a public package: the NAS install no longer needs a registry token or login.
+- The «no login, home network only» note now appears in section 1 of the README, before installation.
+- Internal design spec and implementation plans (`docs/superpowers/`) removed from the tree.
+
 ## 1.3.1 — 2026-09-21
 
 - README: Google Gemini and Claude are now presented side by side as equal choices, with a comparison table, a step-by-step guide to getting each API key (including the paid-tier step Gemini needs for web search), how to switch providers, and a troubleshooting entry for a free-tier Gemini key.

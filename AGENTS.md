@@ -1,8 +1,6 @@
 # Weinkeller — project note
 
-A self-hosted, German-language web app for recording the wines in a home cellar. A single label photo is enough: Claude (image analysis plus web search) classifies and rates the wine, determines its drinking window, and suggests food pairings.
-
-Spec and implementation plans live under `docs/superpowers/` (`docs/superpowers/specs/` for the design spec, `docs/superpowers/plans/` for the phased plans).
+A self-hosted, German-language web app for recording the wines in a home cellar. A single label photo is enough: Google Gemini or Claude (image analysis plus web search) classifies and rates the wine, determines its drinking window, and suggests food pairings.
 
 ## Layering rules
 
@@ -20,7 +18,7 @@ Spec and implementation plans live under `docs/superpowers/` (`docs/superpowers/
 
 ## Versioning, commits and releases
 
-Repository: `github.com/stefanschaedeli/wyychaeller` (private), default branch `main`.
+Repository: `github.com/stefanschaedeli/wyychaeller` (public, MIT), default branch `main`.
 
 - Versions are `MAJOR.MINOR.PATCH`. The agent picks the level from what the session changed:
   - PATCH — fixes only (bugs, wording, docs, dependency updates), no new behaviour.
@@ -28,7 +26,8 @@ Repository: `github.com/stefanschaedeli/wyychaeller` (private), default branch `
   - MAJOR — only when the user asks for a major release, or when existing data or the NAS installation would need manual migration.
 - At the end of a work session: write the commit message from the session summary (conventional subject line such as `feat: …` or `fix: …`, then a short body saying what changed and why), without asking the user to word it.
 - A release bumps the version in `package.json` and `package-lock.json` (`npm version X.Y.Z --no-git-tag-version`), adds a section to `CHANGELOG.md`, then commits, tags `vX.Y.Z` and pushes `main` with the tag.
-- Pushing the tag makes GitHub Actions (`.github/workflows/release-image.yml`) build the amd64 + arm64 image and publish it as `ghcr.io/stefanschaedeli/wyychaeller:X.Y.Z` and `:latest`; the tag must match the `package.json` version. `ci.yml` runs `npm run verify` on every push to `main`.
+- Pushing the tag makes GitHub Actions (`.github/workflows/release-image.yml`) build the amd64 + arm64 image and publish it as `ghcr.io/stefanschaedeli/wyychaeller:X.Y.Z` and `:latest` (public package, no token needed to pull); the tag must match the `package.json` version. `ci.yml` runs `npm run verify` on every push to `main`.
+- After the tag is pushed, create a GitHub Release for it with the matching `CHANGELOG.md` section (`gh release create vX.Y.Z --title vX.Y.Z --notes-file <file>`), so the Releases page stays complete.
 - Never commit `.env`, `data/` or `dist/`.
 
 <!-- BEGIN:nextjs-agent-rules -->

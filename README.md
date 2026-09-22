@@ -1,171 +1,177 @@
 # Weinkeller
 
-Eine kleine, selbst gehostete Web-App, um die Weine im eigenen Keller zu erfassen. Ein Etikett-Foto genügt: Eine KI mit Websuche klassifiziert und bewertet den Wein, bestimmt das Trinkfenster und schlägt passendes Essen vor.
+🇩🇪 Deutsche Version: [README.de.md](README.de.md)
 
-## Inhaltsverzeichnis
+A small, self-hosted web app for recording the wines in your own cellar. A single label photo is enough: an AI with web search classifies and rates the wine, determines its drinking window and suggests food to go with it. The repository name, «Wyychäller», is Swiss German for wine cellar; the app itself speaks German.
 
-1. [Was die App kann](#1-was-die-app-kann)
-2. [KI-Anbieter wählen und API-Schlüssel holen](#2-ki-anbieter-wählen-und-api-schlüssel-holen)
-3. [Kosten](#3-kosten)
-4. [Lokal testen (Docker Desktop)](#4-lokal-testen-docker-desktop)
-5. [Installation auf dem Synology NAS](#5-installation-auf-dem-synology-nas)
-6. [Hinweis zur Installation als App](#6-hinweis-zur-installation-als-app)
-7. [Zugriff von unterwegs](#7-zugriff-von-unterwegs)
-8. [Sicherheit](#8-sicherheit)
+## Table of contents
+
+1. [What the app does](#1-what-the-app-does)
+2. [Choosing an AI provider and getting an API key](#2-choosing-an-ai-provider-and-getting-an-api-key)
+3. [Costs](#3-costs)
+4. [Testing locally (Docker Desktop)](#4-testing-locally-docker-desktop)
+5. [Installing on a Synology NAS](#5-installing-on-a-synology-nas)
+6. [Installing as an app](#6-installing-as-an-app)
+7. [Access from outside the home](#7-access-from-outside-the-home)
+8. [Security](#8-security)
 9. [Backup](#9-backup)
-10. [Update](#10-update)
-11. [Entwicklung](#11-entwicklung)
-12. [Fehlerbehebung](#12-fehlerbehebung)
+10. [Updating](#10-updating)
+11. [Development](#11-development)
+12. [Troubleshooting](#12-troubleshooting)
+13. [License](#13-license)
 
-## 1. Was die App kann
+## 1. What the app does
 
-- Einen Wein zu erfassen braucht nur ein Etikett-Foto und eine Bestätigung.
-- Eine KI mit Websuche klassifiziert den Wein, bewertet ihn, bestimmt das Trinkfenster und schlägt passendes Essen vor.
-- Alle KI-Ergebnisse liegen dauerhaft lokal: Ansehen, Suchen und Filtern kosten nichts und brauchen kein Internet.
-- Die App zeigt, welche Weine bald getrunken werden sollten, und empfiehlt zu einem Gericht die passende Flasche aus dem Keller.
-- Läuft als ein einziger Docker-Container, lokal in Docker Desktop zum Testen und dauerhaft auf einem Synology NAS.
+- Recording a wine takes only a label photo and a confirmation.
+- An AI with web search classifies the wine, rates it, determines the drinking window and suggests matching dishes.
+- All AI results are stored locally for good: viewing, searching and filtering cost nothing and need no internet.
+- The app shows which wines should be drunk soon and recommends the right bottle from the cellar for a given dish.
+- Runs as a single Docker container anywhere. This guide describes Docker Desktop for testing and a Synology NAS for permanent use, which is the author's setup.
+- **Important:** The app deliberately has no login. It belongs on your home network; reach it from outside only through a VPN and never expose its port directly to the internet (see sections 7 and 8).
 
-## 2. KI-Anbieter wählen und API-Schlüssel holen
+## 2. Choosing an AI provider and getting an API key
 
-Die App arbeitet wahlweise mit **Google Gemini** oder mit **Claude von Anthropic**. Beide lesen das Etikett, recherchieren im Web und empfehlen Weine zu einem Gericht; die App verhält sich mit beiden gleich. Es braucht nur den Schlüssel des gewählten Anbieters. Gewechselt wird jederzeit über die `.env`, bereits erfasste Weine bleiben unverändert.
+The app works with either **Google Gemini** or **Claude by Anthropic**. Both read the label, research the wine on the web and recommend wines for a dish; the app behaves the same with both. You only need the key of the provider you choose. You can switch at any time in `.env`; wines already recorded stay unchanged.
 
-|                       | Google Gemini                                           | Claude (Anthropic)                         |
-| --------------------- | ------------------------------------------------------- | ------------------------------------------ |
-| Kosten pro Wein       | rund 1 Rappen (gemessen)                                | rund 8–16 Rappen (geschätzt)               |
-| Websuche              | Google-Suche, bis 5000 Suchanfragen pro Monat kostenlos | 1 Rappen pro Suche, Ergebnisse als Tokens  |
-| Standardmodell        | `gemini-3.7-flash`                                      | `claude-sonnet-5`                          |
-| Einstellung in `.env` | `WINE_INTELLIGENCE_MODE=gemini` und `GEMINI_API_KEY=…`  | `ANTHROPIC_API_KEY=…`                      |
-| Empfehlung            | für die meisten Keller die beste Wahl                   | Alternative, `claude-opus-5` für Raritäten |
+|                   | Google Gemini                                          | Claude (Anthropic)                                |
+| ----------------- | ------------------------------------------------------ | ------------------------------------------------- |
+| Cost per wine     | about 1 Rappen (measured)                              | about 8–16 Rappen (estimated)                     |
+| Web search        | Google Search, free up to 5,000 queries per month      | 1 Rappen per search, results are billed as tokens |
+| Default model     | `gemini-3.7-flash`                                     | `claude-sonnet-5`                                 |
+| Setting in `.env` | `WINE_INTELLIGENCE_MODE=gemini` and `GEMINI_API_KEY=…` | `ANTHROPIC_API_KEY=…`                             |
+| Recommendation    | the best choice for most cellars                       | alternative, `claude-opus-5` for rare wines       |
 
-Ohne Angabe von `WINE_INTELLIGENCE_MODE` verwendet die App Claude. Das hält bestehende Installationen unverändert am Laufen.
+Prices are given in Rappen (Swiss cents, CHF 0.01). Without `WINE_INTELLIGENCE_MODE` the app uses Claude, which keeps existing installations running unchanged.
 
-### Google Gemini: Schlüssel holen
+### Google Gemini: getting a key
 
-1. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) öffnen und mit einem Google-Konto anmelden.
-2. «Create API key» wählen. Google legt dabei automatisch ein Projekt an, zu dem der Schlüssel gehört.
-3. Beim Projekt auf «Set up billing» klicken, ein Zahlungskonto anlegen oder auswählen und ein Modell wählen: **Prepay** (Guthaben ab 5 US-Dollar im Voraus laden, reicht für mehrere hundert Weine) oder Postpay (Abrechnung am Monatsende). Dieser Schritt ist nötig: Mit einem Gratis-Schlüssel lehnt Google die Websuche bei den Gemini-3-Modellen ab, und die App meldet, der KI-Dienst sei nicht erreichbar.
-4. Empfohlen: auf der Seite «Spend» unter «Monthly spend cap» eine tiefe Obergrenze setzen. Bei Prepay ohne automatisches Nachladen ist das Guthaben ohnehin die Obergrenze.
-5. Schlüssel kopieren und in die `.env` eintragen:
+1. Open [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and sign in with a Google account.
+2. Choose «Create API key». Google automatically creates a project the key belongs to.
+3. Click «Set up billing» on the project, create or select a billing account and choose a model: **Prepay** (load credit from 5 US dollars upfront, enough for several hundred wines) or Postpay (billed at the end of the month). This step is required: with a free-tier key, Google refuses web search on the Gemini 3 models and the app reports that the AI service is unreachable.
+4. Recommended: set a low «Monthly spend cap» on the «Spend» page. With Prepay and no automatic top-up, the credit is the cap anyway.
+5. Copy the key and put it into `.env`:
 
    ```bash
    WINE_INTELLIGENCE_MODE=gemini
-   GEMINI_API_KEY=hier-den-schlüssel-einfügen
+   GEMINI_API_KEY=paste-the-key-here
    ```
 
-Im kostenpflichtigen Tarif verwendet Google die Etikett-Fotos und Anfragen laut eigenen Bedingungen nicht zur Verbesserung seiner Produkte; im Gratis-Tarif schon.
+On the paid tier, Google states in its terms that it does not use label photos and requests to improve its products; on the free tier it does.
 
-### Claude (Anthropic): Schlüssel holen
+### Claude (Anthropic): getting a key
 
-1. [platform.claude.com](https://platform.claude.com) öffnen und ein Konto anlegen.
-2. Unter «Billing» Guthaben laden (ab 5 US-Dollar).
-3. Unter «API keys» mit «Create key» einen Schlüssel erstellen und kopieren. Er wird nur einmal angezeigt.
-4. Empfohlen: unter «Limits» ein monatliches Ausgabelimit setzen.
-5. In die `.env` eintragen:
+1. Open [platform.claude.com](https://platform.claude.com) and create an account.
+2. Load credit under «Billing» (from 5 US dollars).
+3. Under «API keys» create a key with «Create key» and copy it. It is shown only once.
+4. Recommended: set a monthly spend limit under «Limits».
+5. Put it into `.env`:
 
    ```bash
-   ANTHROPIC_API_KEY=hier-den-schlüssel-einfügen
+   ANTHROPIC_API_KEY=paste-the-key-here
    ```
 
-### Anbieter wechseln
+### Switching providers
 
-`WINE_INTELLIGENCE_MODE` in der `.env` auf `gemini` oder `claude` setzen und den Container neu starten (lokal `npm run deploy:local`, auf dem NAS Projekt → Aktion → «Erstellen»). Die Startzeile im Protokoll zeigt den aktiven Anbieter und das Modell, z. B. `intelligenceMode=gemini model=gemini-3.7-flash`.
+Set `WINE_INTELLIGENCE_MODE` in `.env` to `gemini` or `claude` and restart the container (locally `npm run deploy:local`, on the NAS Project → Action → «Build»). The start-up line in the log shows the active provider and model, for example `intelligenceMode=gemini model=gemini-3.7-flash`.
 
-## 3. Kosten
+## 3. Costs
 
-KI-Aufrufe entstehen ausschliesslich bei drei Aktionen: beim Erfassen eines Weins (Etikett lesen und Recherche), bei «Neu bewerten» und bei einer neuen Frage nach einem passenden Wein zu einem Gericht. Alles, was bereits gespeichert ist, kostet beim Ansehen, Suchen und Filtern nichts. Eine einzelne Frage nach einem passenden Wein zu einem Gericht kostet deutlich weniger als eine Weinerfassung.
+AI calls happen only on three actions: when a wine is recorded (label reading and research), on «Re-evaluate», and on a new question about a matching wine for a dish. Everything already stored costs nothing to view, search or filter. A single question about a wine for a dish costs far less than recording a wine.
 
-**Google Gemini** (`gemini-3.7-flash`), gemessen bei zwei Testweinen: rund 1 Rappen pro erfasstem Wein (etwa 2300 Eingabe- und 2000 Ausgabe-Tokens, 3–4 Suchanfragen, etwa 15 Sekunden). Die Google-Suche ist bis 5000 Suchanfragen pro Monat kostenlos, und die Suchergebnisse werden nicht als Tokens verrechnet. Der Listenpreis von `gemini-3.7-flash` verdoppelt sich laut Google am 1. Januar 2027; auch dann bleibt ein Wein bei wenigen Rappen. Ein anderes Modell lässt sich über `GEMINI_MODEL` wählen; `gemini-2.5-flash` lieferte im Test deutlich dünnere Ergebnisse.
+**Google Gemini** (`gemini-3.7-flash`), measured on two test wines: about 1 Rappen per recorded wine (about 2,300 input and 2,000 output tokens, 3–4 search queries, about 15 seconds). Google Search is free up to 5,000 queries per month, and its results are not billed as tokens. According to Google, the list price of `gemini-3.7-flash` doubles on 1 January 2027; even then a wine stays at a few Rappen. Another model can be chosen via `GEMINI_MODEL`; `gemini-2.5-flash` gave noticeably thinner results in testing.
 
-**Claude**, geschätzt: mit `claude-sonnet-5` rund 8–16 Rappen pro erfasstem Wein, inklusive Websuche-Gebühr. Der grösste Teil entfällt auf die Websuche, weil deren Ergebnisse als Eingabe-Tokens verrechnet werden (gemessen rund 50 000 Tokens pro Wein).
+**Claude**, estimated: with `claude-sonnet-5` about 8–16 Rappen per recorded wine, including the web search fee. Most of it goes to web search, because its results are billed as input tokens (measured at about 50,000 tokens per wine).
 
-- `claude-sonnet-5` (Standard): für bekannte Weine meist ausreichend.
-- `claude-opus-5`: beste Erkennung und Recherche, auch bei seltenen Weinen, rund 2,5-mal so teuer (20–40 Rappen). Umstellen über `CLAUDE_MODEL=claude-opus-5` in der `.env`.
+- `claude-sonnet-5` (default): usually sufficient for well-known wines.
+- `claude-opus-5`: best recognition and research, also for rare wines, about 2.5 times the price (20–40 Rappen). Switch with `CLAUDE_MODEL=claude-opus-5` in `.env`.
 
-Für beide Anbieter gilt: «Neu bewerten» verwendet den jeweils eingestellten Anbieter und das eingestellte Modell. Die monatliche Obergrenze in «Mehr → Einstellungen» schützt vor Überraschungen.
+For both providers: «Re-evaluate» uses whichever provider and model is configured. The monthly cap under «Mehr → Einstellungen» (More → Settings) protects against surprises.
 
-Zum kostenlosen Ausprobieren ohne jeden API-Aufruf steht der Modus `WINE_INTELLIGENCE_MODE=recorded` zur Verfügung (siehe Abschnitt 4): Er liefert aufgezeichnete, realistische Antworten statt echter KI-Aufrufe.
+To try the app for free without any API call, use `WINE_INTELLIGENCE_MODE=recorded` (see section 4): it returns recorded, realistic answers instead of real AI calls.
 
-## 4. Lokal testen (Docker Desktop)
+## 4. Testing locally (Docker Desktop)
 
 ```bash
 cp .env.example .env
-# Anbieter und API-Schlüssel in .env eintragen (siehe Abschnitt 2)
+# put the provider and API key into .env (see section 2)
 npm run deploy:local
 ```
 
-Die App ist danach unter [http://localhost:3010](http://localhost:3010) erreichbar (der Hostport lässt sich mit der Umgebungsvariable `WEINKELLER_PORT` ändern; im Container und auf dem NAS bleibt der Port immer 3000).
+The app is then available at [http://localhost:3010](http://localhost:3010). The host port can be changed with the environment variable `WEINKELLER_PORT`; inside the container and on the NAS the port is always 3000.
 
-Ohne jede Kosten ausprobieren, mit aufgezeichneten statt echten KI-Antworten:
+To try it at no cost, with recorded instead of real AI answers:
 
 ```bash
 WINE_INTELLIGENCE_MODE=recorded npm run deploy:local
 ```
 
-## 5. Installation auf dem Synology NAS
+## 5. Installing on a Synology NAS
 
-Das Image wird von GitHub Actions bei jedem Versions-Tag gebaut (für Intel/AMD und ARM) und in der privaten Container-Registry dieses Repositorys abgelegt: `ghcr.io/stefanschaedeli/wyychaeller`. Das NAS holt es von dort.
+GitHub Actions builds the image for every version tag (for Intel/AMD and ARM) and publishes it as a public package in this repository's container registry: `ghcr.io/stefanschaedeli/wyychaeller`. The NAS pulls it from there; no registry login is needed.
 
-1. Zugriffstoken erstellen: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → «Generate new token», einzig mit dem Recht `read:packages`. Dieses Token kann nur Images lesen, keinen Code.
-2. Container Manager → Registrierung → Einstellungen → Hinzufügen: Name `ghcr`, URL `https://ghcr.io`, Benutzername `stefanschaedeli`, Passwort = das Token. Diese Registrierung als aktiv setzen («Verwenden»).
-3. File Station: Ordner `/docker/weinkeller` und darin `data` anlegen. `docker-compose.nas.yml` und eine Datei `.env` mit dem Anbieter und dem API-Schlüssel hochladen (für Gemini die Zeilen `WINE_INTELLIGENCE_MODE=gemini` und `GEMINI_API_KEY=…`, für Claude die Zeile `ANTHROPIC_API_KEY=…`, siehe Abschnitt 2) — beide Dateien müssen nebeneinander in `/docker/weinkeller` liegen. Ohne echten API-Schlüssel funktioniert die App auch im kostenlosen Demo-Modus: dazu in derselben `.env` zusätzlich `WINE_INTELLIGENCE_MODE=recorded` eintragen.
-4. Schreibrecht für den Container (läuft als Benutzer-ID 1000): per SSH `sudo chown -R 1000:1000 /volume1/docker/weinkeller/data`.
-5. Container Manager → Projekt → Erstellen → Pfad `/docker/weinkeller`, vorhandene `docker-compose.nas.yml` verwenden → Starten. Das Image wird dabei automatisch heruntergeladen.
-6. Im Heimnetz öffnen: `http://<NAS-IP>:3000`. Auf dem Handy «Zum Home-Bildschirm» hinzufügen.
+1. File Station: create the folder `/docker/weinkeller` with a `data` folder inside. Upload `docker-compose.nas.yml` and a file `.env` containing the provider and API key (for Gemini the lines `WINE_INTELLIGENCE_MODE=gemini` and `GEMINI_API_KEY=…`, for Claude the line `ANTHROPIC_API_KEY=…`, see section 2). Both files must sit side by side in `/docker/weinkeller`. Without a real API key the app also works in the free demo mode: add `WINE_INTELLIGENCE_MODE=recorded` to the same `.env`.
+2. Write permission for the container (runs as user ID 1000): via SSH `sudo chown -R 1000:1000 /volume1/docker/weinkeller/data`.
+3. Container Manager → Project → Create → path `/docker/weinkeller`, use the existing `docker-compose.nas.yml` → Start. The image is downloaded automatically.
+4. Open it on the home network: `http://<NAS-IP>:3000`. On the phone, choose «Add to Home Screen».
 
-**Protokoll:** Die App schreibt laufend ins Container-Protokoll, was sie tut: jede Anfrage, jeden Analyseschritt, jeden KI-Aufruf mit Dauer und Token-Verbrauch, die Websuchen, Fotos und Änderungen am Keller. Anzeigen im Container Manager unter Container → `weinkeller` → Details → Protokoll, oder per SSH mit `docker logs -f weinkeller`. Die Ausführlichkeit steuert `LOG_LEVEL` in der `.env`: `info` (Standard), `debug` (zusätzlich Healthcheck- und Foto-Abrufe), `warn`, `error` oder `silent`. Der API-Schlüssel, Fotos und Antworttexte der KI werden nie protokolliert.
+**Log:** The app continuously writes what it is doing to the container log: every request, every analysis step, every AI call with duration and token usage, the web searches, photos and changes to the cellar. View it in Container Manager under Container → `weinkeller` → Details → Log, or via SSH with `docker logs -f weinkeller`. `LOG_LEVEL` in `.env` controls the verbosity: `info` (default), `debug` (adds healthcheck and photo requests), `warn`, `error` or `silent`. The API key, photos and AI answer texts are never logged.
 
-**Aktualisieren:** Container Manager → Image → `ghcr.io/stefanschaedeli/wyychaeller` → Aktualisieren (oder per SSH `docker pull ghcr.io/stefanschaedeli/wyychaeller:latest`), danach Projekt → Aktion → «Erstellen» (neu aufbauen). Die Daten in `data` bleiben erhalten. Wer eine feste Version will, trägt in `docker-compose.nas.yml` statt `latest` z. B. `1.1.0` ein.
+**Updating:** Container Manager → Image → `ghcr.io/stefanschaedeli/wyychaeller` → Update (or via SSH `docker pull ghcr.io/stefanschaedeli/wyychaeller:latest`), then Project → Action → «Build» (rebuild). The data in `data` is kept. To pin a version, replace `latest` in `docker-compose.nas.yml` with e.g. `1.1.0`.
 
-**Ohne Registry (offline):** Auf dem Mac `npm run image:nas` (für ARM: `bash scripts/build-nas-image.sh arm64`), das Archiv aus `dist/` im Container Manager unter Image → Hinzufügen → Aus Datei importieren und in `docker-compose.nas.yml` als Image `weinkeller:<Version>` eintragen.
+**Without the registry (offline):** On a Mac run `npm run image:nas` (for ARM: `bash scripts/build-nas-image.sh arm64`), import the archive from `dist/` in Container Manager under Image → Add → Import from file, and set the image in `docker-compose.nas.yml` to `weinkeller:<version>`.
 
-## 6. Hinweis zur Installation als App
+## 6. Installing as an app
 
-Auf dem iPhone funktioniert die Installation über «Zum Home-Bildschirm» direkt, ohne HTTPS. Android/Chrome verlangt für die echte App-Installation (mit Installationsdialog) HTTPS; das lässt sich optional über DSM → Anmeldeportal → Reverse Proxy mit Zertifikat einrichten. Ohne HTTPS funktioniert die App normal im Browser, inklusive Kamera für das Etikett-Foto.
+On the iPhone, «Add to Home Screen» works directly, without HTTPS. Android/Chrome requires HTTPS for the real app installation (with an install dialog); that can optionally be set up via DSM → Login Portal → Reverse Proxy with a certificate. Without HTTPS the app works normally in the browser, including the camera for the label photo.
 
-## 7. Zugriff von unterwegs
+## 7. Access from outside the home
 
-Von unterwegs nur über VPN (Synology VPN Server oder Tailscale) zugreifen. Den Port 3000 nie direkt ins Internet freigeben: Die App hat bewusst kein Login.
+From outside, connect only through a VPN (Synology VPN Server or Tailscale). Never expose port 3000 directly to the internet: the app deliberately has no login (see section 1).
 
-## 8. Sicherheit
+## 8. Security
 
-- Die App hat bewusst kein Login. Den Port deshalb nie ins Internet freigeben — Zugriff von unterwegs ausschliesslich über VPN oder Tailscale (siehe Abschnitt 7).
-- Der API-Schlüssel steht nur in der `.env`-Datei neben der Compose-Datei, nie im Image und nie in Git.
-- Beim KI-Anbieter eine Ausgabenobergrenze setzen (Google AI Studio: «Spend» → «Monthly spend cap»; Anthropic: «Limits»), damit ein Fehlverhalten oder ein Leck begrenzt bleibt.
-- Backups (siehe Abschnitt 9) enthalten Etikett-Fotos und die Datenbank — entsprechend sorgfältig aufbewahren.
+- The app deliberately has no login. Therefore never expose the port to the internet; access from outside only via VPN or Tailscale (see section 7).
+- The API key lives only in the `.env` file next to the compose file, never in the image and never in Git.
+- Set a spend cap at the AI provider (Google AI Studio: «Spend» → «Monthly spend cap»; Anthropic: «Limits») so that a malfunction or a leak stays bounded.
+- Backups (see section 9) contain label photos and the database; store them with corresponding care.
 
 ## 9. Backup
 
-Hyper Backup: Ordner `/docker/weinkeller/data` aufnehmen (enthält `weinkeller.db` und `photos/`). Wiederherstellen: Ordner zurückspielen, Projekt starten.
+Hyper Backup: include the folder `/docker/weinkeller/data` (contains `weinkeller.db` and `photos/`). Restore: copy the folder back, start the project.
 
-## 10. Update
+## 10. Updating
 
-Neues Archiv bauen, importieren, in `docker-compose.nas.yml` die Version anpassen, Projekt neu erstellen. Datenbank-Migrationen laufen beim Start automatisch.
+Build a new archive, import it, adjust the version in `docker-compose.nas.yml`, rebuild the project. Database migrations run automatically at start-up.
 
-## 11. Entwicklung
+## 11. Development
 
-- `npm run dev` — Entwicklungsserver auf Port 3001.
-- `npm run verify` — Format, Lint, Typprüfung, Tests und die Playwright-Journey (Playwright braucht einen freien Port 3100).
-- `npm run deploy:local` — lokal bauen und starten, siehe Abschnitt 4.
-- Spezifikation und Pläne liegen unter `docs/superpowers/`.
-- `npm run verify` prüft `npm audit` nur ab Stufe `high` (`--audit-level=high`), bewusst so eingestellt. Ein bekannter moderater Befund (`drizzle-kit` → `esbuild`, nur im Entwicklungsserver, GHSA-67mh-4wv8-2f99) betrifft ausschliesslich `npm run database:generate` während der Entwicklung und ist nicht im Laufzeit-Image enthalten; er wird bewusst akzeptiert.
+- `npm run dev` — development server on port 3001.
+- `npm run verify` — format, lint, type check, tests and the Playwright journey (Playwright needs a free port 3100).
+- `npm run deploy:local` — build and start locally, see section 4.
+- Contributions are welcome: `npm run verify` must pass; CI runs it on every push and pull request. Thanks to `WINE_INTELLIGENCE_MODE=recorded`, development needs no API key.
+- `npm run verify` runs `npm audit` only from level `high` (`--audit-level=high`), deliberately. A known moderate finding (`drizzle-kit` → `esbuild`, development server only, GHSA-67mh-4wv8-2f99) affects only `npm run database:generate` during development and is not part of the runtime image; it is knowingly accepted.
 
-Qualitätsregeln (siehe Spezifikation Abschnitt 8):
+Quality rules:
 
-1. TypeScript strict, kein `any`, keine unbegründeten Non-Null-Assertions.
-2. Kleine Dateien (max. 250 Zeilen), kleine Funktionen, klare Schichten: UI ruft nie Datenbank oder KI-Dienst direkt auf.
-3. Sprechende, ausgeschriebene Namen; keine Abkürzungen; Booleans mit `is`/`has`.
-4. Keine magischen Werte — Konstanten zentral in `src/domain/constants.ts`.
-5. Testgetrieben (TDD); `npm run verify` muss vor jedem Commit grün sein.
+1. TypeScript strict, no `any`, no unjustified non-null assertions.
+2. Small files (max. 250 lines), small functions, clear layers: the UI never calls the database or the AI service directly.
+3. Descriptive, spelled-out names; no abbreviations; booleans with `is`/`has`.
+4. No magic values — constants live centrally in `src/domain/constants.ts`.
+5. Test-driven (TDD); `npm run verify` must be green before every commit.
 
-## 12. Fehlerbehebung
+## 12. Troubleshooting
 
-| Symptom                                                              | Massnahme                                                                                               |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| «Kein API-Schlüssel hinterlegt»                                      | `.env` prüfen: Der Schlüssel muss zum Anbieter in `WINE_INTELLIGENCE_MODE` passen. Projekt neu starten. |
-| Mit Gemini: «KI-Dienst nicht erreichbar», Log zeigt `httpStatus=429` | Der Schlüssel ist im Gratis-Tarif. Abrechnung einrichten (Abschnitt 2, Schritt 3).                      |
-| «wartet auf Analyse» bleibt stehen                                   | Internet-Anbindung des NAS prüfen, danach «Analyse erneut versuchen».                                   |
-| Container startet nicht, Log zeigt `SQLITE_CANTOPEN` oder `EACCES`   | Schritt 5.4 (Schreibrecht auf `data`) wiederholen.                                                      |
-| Unklar, was die App gerade tut                                       | Container-Protokoll lesen (`docker logs -f weinkeller`), bei Bedarf `LOG_LEVEL=debug`.                  |
-| Monatliche Obergrenze erreicht                                       | «Mehr → Einstellungen» öffnen und Obergrenze anpassen.                                                  |
+| Symptom                                                               | Action                                                                                          |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| «Kein API-Schlüssel hinterlegt» (no API key configured)               | Check `.env`: the key must match the provider in `WINE_INTELLIGENCE_MODE`. Restart the project. |
+| With Gemini: «KI-Dienst nicht erreichbar», log shows `httpStatus=429` | The key is on the free tier. Set up billing (section 2, step 3).                                |
+| «wartet auf Analyse» (waiting for analysis) never finishes            | Check the NAS's internet connection, then «Analyse erneut versuchen» (retry analysis).          |
+| Container does not start, log shows `SQLITE_CANTOPEN` or `EACCES`     | Repeat step 5.2 (write permission on `data`).                                                   |
+| Unclear what the app is doing right now                               | Read the container log (`docker logs -f weinkeller`), with `LOG_LEVEL=debug` if needed.         |
+| Monthly cap reached                                                   | Open «Mehr → Einstellungen» (More → Settings) and adjust the cap.                               |
 
-Eine geänderte Währung in den Einstellungen wirkt sich auf die Preisrecherche erst nach einem Neustart des Containers aus.
+A changed currency in the settings only affects the price research after the container is restarted.
+
+## 13. License
+
+MIT, see [LICENSE](LICENSE).
