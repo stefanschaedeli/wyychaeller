@@ -4,3 +4,17 @@ export class RecordNotFoundError extends Error {
     this.name = "RecordNotFoundError";
   }
 }
+
+export class InvalidPlacementError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidPlacementError";
+  }
+}
+
+export class PlacementChoiceRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PlacementChoiceRequiredError";
+  }
+}

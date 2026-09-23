@@ -1,7 +1,14 @@
-import { desc, eq, sql } from "drizzle-orm";
-import type { WineCellarDatabase } from "../database/connection";
-import { tastings, wines, type TastingRecord } from "../database/schema";
-import { RecordNotFoundError } from "./errors";
+import { desc, eq } from "drizzle-orm";
+import type { WineCellarDatabase, WineCellarTransaction } from "../database/connection";
+import {
+  bottlePlacements,
+  tastings,
+  wines,
+  type BottlePlacementRecord,
+  type TastingRecord,
+} from "../database/schema";
+import { PlacementChoiceRequiredError, RecordNotFoundError } from "./errors";
+import { refreshCachedBottleCount } from "./placement-repository";
 
 export interface NewTasting {
   wineId: number;
@@ -9,6 +16,7 @@ export interface NewTasting {
   starRating?: number | null;
   tastingNote?: string | null;
   occasionOrDish?: string | null;
+  placementId?: number | null;
 }
 
 export interface TastingWithWine extends TastingRecord {
@@ -17,20 +25,64 @@ export interface TastingWithWine extends TastingRecord {
   wineVintage: number | null;
 }
 
+/** Picks which placement a tasting removes a bottle from, or null when none applies. */
+function choosePlacement(
+  wineId: number,
+  placementId: number | null | undefined,
+  placements: BottlePlacementRecord[],
+): BottlePlacementRecord | null {
+  if (placementId !== null && placementId !== undefined) {
+    const chosenPlacement = placements.find((placement) => placement.id === placementId);
+    if (chosenPlacement === undefined) {
+      throw new RecordNotFoundError(`Placement ${placementId} for wine ${wineId}`);
+    }
+    return chosenPlacement;
+  }
+  if (placements.length === 0) return null;
+  if (placements.length === 1) return placements[0];
+  throw new PlacementChoiceRequiredError(
+    `Wine ${wineId} has several placements; a placementId is required`,
+  );
+}
+
+function decrementPlacement(
+  transaction: WineCellarTransaction,
+  placement: BottlePlacementRecord,
+): void {
+  if (placement.bottleCount <= 1) {
+    transaction.delete(bottlePlacements).where(eq(bottlePlacements.id, placement.id)).run();
+  } else {
+    transaction
+      .update(bottlePlacements)
+      .set({ bottleCount: placement.bottleCount - 1 })
+      .where(eq(bottlePlacements.id, placement.id))
+      .run();
+  }
+}
+
 export class TastingRepository {
   constructor(private readonly database: WineCellarDatabase) {}
 
   /** Storing the tasting and removing the bottle must succeed or fail together. */
   recordTasting(tasting: NewTasting): TastingRecord {
     return this.database.transaction((transaction) => {
-      const bottleUpdate = transaction
-        .update(wines)
-        .set({ bottleCount: sql`max(${wines.bottleCount} - 1, 0)`, updatedAt: new Date() })
-        .where(eq(wines.id, tasting.wineId))
-        .run();
-      if (bottleUpdate.changes === 0) throw new RecordNotFoundError(`Wine ${tasting.wineId}`);
+      const wine = transaction.select().from(wines).where(eq(wines.id, tasting.wineId)).get();
+      if (wine === undefined) throw new RecordNotFoundError(`Wine ${tasting.wineId}`);
 
-      return transaction.insert(tastings).values(tasting).returning().get();
+      const placements = transaction
+        .select()
+        .from(bottlePlacements)
+        .where(eq(bottlePlacements.wineId, tasting.wineId))
+        .all();
+      const chosenPlacement = choosePlacement(tasting.wineId, tasting.placementId, placements);
+
+      if (chosenPlacement !== null) {
+        decrementPlacement(transaction, chosenPlacement);
+        refreshCachedBottleCount(transaction, tasting.wineId);
+      }
+
+      const { placementId: _placementId, ...tastingFields } = tasting;
+      return transaction.insert(tastings).values(tastingFields).returning().get();
     });
   }
 

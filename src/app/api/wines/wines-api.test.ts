@@ -152,6 +152,11 @@ describe("wine capture flow", () => {
 describe("wine maintenance", () => {
   it("edits, records a tasting and deletes", async () => {
     const wineId = await uploadAndConfirm();
+    // The confirmation route still sets bottleCount directly (Task 4 switches it to
+    // placements), so give the wine a placement here for the tasting to decrement.
+    testContainer.container.placementRepository.replacePlacements(wineId, [
+      { locationId: null, rowIndex: null, slotIndex: null, freeText: null, bottleCount: 6 },
+    ]);
 
     const edited = await editWine(
       jsonRequest(`${BASE_URL}/${wineId}`, "PATCH", { storageLocation: "Regal 1" }),

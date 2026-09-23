@@ -7,7 +7,9 @@ import { createLogger } from "./logging/logger";
 import { PhotoStorage } from "./photo-storage/photo-storage";
 import { AiUsageRepository } from "./repository/ai-usage-repository";
 import { DishRecommendationRepository } from "./repository/dish-recommendation-repository";
+import { PlacementRepository } from "./repository/placement-repository";
 import { SettingsRepository } from "./repository/settings-repository";
+import { StorageLocationRepository } from "./repository/storage-location-repository";
 import { TastingRepository } from "./repository/tasting-repository";
 import { WineRepository } from "./repository/wine-repository";
 import { AiBudgetGuard } from "./services/ai-budget-guard";
@@ -30,12 +32,21 @@ export interface ServiceContainerOptions {
 
 export type ServiceContainer = ReturnType<typeof buildServiceContainer>;
 
+function buildRepositories(database: WineCellarDatabase) {
+  return {
+    wineRepository: new WineRepository(database),
+    tastingRepository: new TastingRepository(database),
+    placementRepository: new PlacementRepository(database),
+    storageLocationRepository: new StorageLocationRepository(database),
+    dishRecommendationRepository: new DishRecommendationRepository(database),
+    settingsRepository: new SettingsRepository(database),
+  };
+}
+
 export function buildServiceContainer(options: ServiceContainerOptions) {
   const { database, wineIntelligence, isAiConfigured } = options;
-  const wineRepository = new WineRepository(database);
-  const tastingRepository = new TastingRepository(database);
-  const dishRecommendationRepository = new DishRecommendationRepository(database);
-  const settingsRepository = new SettingsRepository(database);
+  const repositories = buildRepositories(database);
+  const { wineRepository, dishRecommendationRepository, settingsRepository } = repositories;
   const photoStorage = new PhotoStorage(options.photoDirectory);
   const getNow = () => new Date();
   const aiBudgetGuard = new AiBudgetGuard(
@@ -45,10 +56,7 @@ export function buildServiceContainer(options: ServiceContainerOptions) {
   );
 
   return {
-    wineRepository,
-    tastingRepository,
-    dishRecommendationRepository,
-    settingsRepository,
+    ...repositories,
     photoStorage,
     aiBudgetGuard,
     isAiConfigured,
