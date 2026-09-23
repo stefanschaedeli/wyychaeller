@@ -1,6 +1,7 @@
 "use client";
 
-import { parseBottleCount } from "@/lib/form-values";
+import { useState } from "react";
+import { commitCountText, parseCountWhileTyping } from "@/lib/count-input";
 
 const NO_BOTTLES = 0;
 
@@ -13,13 +14,27 @@ export interface CountStepperProps {
 
 /** Minus / number / plus, sized for a thumb: the only bottle-count control of the picker. */
 export function CountStepper({ value, onChange, label }: CountStepperProps) {
-  function changeFromText(text: string) {
-    if (text.trim() === "") {
-      onChange(NO_BOTTLES);
-      return;
-    }
-    const parsedCount = parseBottleCount(text, NO_BOTTLES);
-    if (parsedCount !== null) onChange(parsedCount);
+  // The field keeps what the user typed, so clearing it to retype a two-digit number works;
+  // only a usable text commits. When the count changes elsewhere (the buttons, a new slot),
+  // the buffer is adjusted during render, the pattern React documents for resetting state
+  // on a changed prop — an effect would first render the stale text.
+  const [text, setText] = useState(() => String(value));
+  const [lastValue, setLastValue] = useState(value);
+  if (lastValue !== value) {
+    setLastValue(value);
+    setText(String(value));
+  }
+
+  function changeFromText(typedText: string) {
+    setText(typedText);
+    const parsedCount = parseCountWhileTyping(typedText);
+    if (parsedCount !== null && parsedCount !== value) onChange(parsedCount);
+  }
+
+  function commitOnBlur() {
+    const committedCount = commitCountText(text, value);
+    setText(String(committedCount));
+    if (committedCount !== value) onChange(committedCount);
   }
 
   return (
@@ -38,8 +53,9 @@ export function CountStepper({ value, onChange, label }: CountStepperProps) {
           aria-label="Anzahl Flaschen"
           className="field-input min-h-11 w-20 text-center"
           inputMode="numeric"
-          value={String(value)}
+          value={text}
           onChange={(event) => changeFromText(event.target.value)}
+          onBlur={commitOnBlur}
         />
         <button
           type="button"

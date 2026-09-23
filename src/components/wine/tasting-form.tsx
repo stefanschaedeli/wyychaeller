@@ -23,13 +23,16 @@ function PlacementChoice({
   placements,
   selectedPlacementId,
   onSelect,
+  errorNoticeId,
 }: {
   placements: BottlePlacementResponse[];
   selectedPlacementId: number | null;
   onSelect: (placementId: number) => void;
+  /** Points at the notice while the choice is missing, so the error is announced with it. */
+  errorNoticeId: string | null;
 }) {
   return (
-    <fieldset className="grid gap-2">
+    <fieldset className="grid gap-2" aria-describedby={errorNoticeId ?? undefined}>
       <legend className="field-label">Aus welchem Lagerort?</legend>
       {placements.map((placement) => (
         <label key={placement.id} className="flex min-h-11 items-center gap-2">
@@ -51,6 +54,7 @@ function PlacementChoice({
 
 export function TastingForm({ wineId, placements, onRecorded, onCancel }: TastingFormProps) {
   const noteId = useId();
+  const errorNoticeId = useId();
   const [starRating, setStarRating] = useState<number | null>(null);
   const [tastingNote, setTastingNote] = useState("");
   const [occasionOrDish, setOccasionOrDish] = useState("");
@@ -61,7 +65,7 @@ export function TastingForm({ wineId, placements, onRecorded, onCancel }: Tastin
   async function recordTasting(event: FormEvent) {
     event.preventDefault();
     if (hasPlacementChoice && placementId === null) {
-      setErrorCode("invalidInput");
+      setErrorCode("placementRequired");
       return;
     }
     try {
@@ -86,6 +90,7 @@ export function TastingForm({ wineId, placements, onRecorded, onCancel }: Tastin
           placements={placements}
           selectedPlacementId={placementId}
           onSelect={setPlacementId}
+          errorNoticeId={errorCode === "placementRequired" ? errorNoticeId : null}
         />
       )}
       <StarRatingInput value={starRating} onChange={setStarRating} />
@@ -102,7 +107,7 @@ export function TastingForm({ wineId, placements, onRecorded, onCancel }: Tastin
         />
       </div>
       <TextField label="Anlass oder Essen" value={occasionOrDish} onChange={setOccasionOrDish} />
-      {errorCode && <ErrorNotice errorCode={errorCode} />}
+      {errorCode && <ErrorNotice errorCode={errorCode} id={errorNoticeId} />}
       <div className="flex gap-2">
         <button type="submit" className="button-primary">
           Speichern

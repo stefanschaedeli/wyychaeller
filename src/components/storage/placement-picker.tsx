@@ -93,19 +93,21 @@ export function PlacementPicker({ wine, overview }: PlacementPickerProps) {
         totalBottleCount={state.totalBottleCount}
         onRemove={(placement) => state.setCountAtPosition(placement, NO_BOTTLES)}
       />
-      {errorCode && <ErrorNotice errorCode={errorCode} />}
-      <footer className="flex flex-wrap gap-2 border-t border-line pt-4">
-        <button
-          type="button"
-          className="button-primary"
-          disabled={isSaving}
-          onClick={() => void savePlacements()}
-        >
-          Fertig
-        </button>
-        <button type="button" className="button-ghost" onClick={() => router.push(wineHref)}>
-          Abbrechen
-        </button>
+      <footer className="grid gap-3 border-t border-line pt-4">
+        {errorCode && <ErrorNotice errorCode={errorCode} shouldTakeFocus />}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="button-primary"
+            disabled={isSaving}
+            onClick={() => void savePlacements()}
+          >
+            Fertig
+          </button>
+          <button type="button" className="button-ghost" onClick={() => router.push(wineHref)}>
+            Abbrechen
+          </button>
+        </div>
       </footer>
     </div>
   );

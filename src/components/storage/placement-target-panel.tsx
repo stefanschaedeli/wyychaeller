@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { TextField } from "@/components/shared/text-field";
-import { formatRowLabel, formatSlotLabel } from "@/domain/storage-location";
+import { buildPlacementKey, formatRowLabel, formatSlotLabel } from "@/domain/storage-location";
 import { toNullableText } from "@/lib/form-values";
 import type { SlotOccupancy } from "@/lib/slot-occupancy";
 import type { StorageLocationResponse } from "@/shared/api-contract";
@@ -54,13 +54,15 @@ function SlotDetail({
 
 function GridTarget(props: PlacementTargetPanelProps & { location: StorageLocationResponse }) {
   const { state, location, occupancy } = props;
+  // buildPlacementKey renders exactly the key buildSlotKey produces for a full grid
+  // position, so a draft entry can never be keyed onto a cell it does not belong to.
   const ownCounts = new Map(
     state.draft
-      .filter((entry) => entry.locationId === location.id && entry.rowIndex !== null)
-      .map((entry) => [
-        buildSlotKey(location.id, entry.rowIndex ?? 0, entry.slotIndex ?? 0),
-        entry.bottleCount,
-      ]),
+      .filter(
+        (entry) =>
+          entry.locationId === location.id && entry.rowIndex !== null && entry.slotIndex !== null,
+      )
+      .map((entry) => [buildPlacementKey(entry), entry.bottleCount]),
   );
   const selectedKey =
     state.selectedSlot === null
