@@ -1,6 +1,5 @@
 import { z } from "zod";
 import {
-  MAXIMUM_BOTTLE_COUNT,
   MAXIMUM_LONG_TEXT_LENGTH,
   MAXIMUM_SHORT_TEXT_LENGTH,
   MINIMUM_DISH_TEXT_LENGTH,
@@ -8,7 +7,7 @@ import {
 import { DRINKING_MATURITIES, WINE_TYPES } from "@/domain/wine-types";
 
 const shortText = z.string().trim().max(MAXIMUM_SHORT_TEXT_LENGTH);
-const optionalShortText = shortText
+export const optionalShortText = shortText
   .nullable()
   .transform((text) => (text === null || text === "" ? null : text));
 const optionalLongText = z
@@ -30,23 +29,15 @@ const identityFields = {
 };
 
 const cellarFields = {
-  storageLocation: optionalShortText,
   purchasePricePerBottle: z.number().min(0).max(1_000_000).nullable(),
 };
 
-export const WineConfirmationSchema = z
-  .object({
-    ...identityFields,
-    ...cellarFields,
-    bottleCount: z.number().int().min(1).max(MAXIMUM_BOTTLE_COUNT),
-  })
-  .strict();
+export const WineConfirmationSchema = z.object({ ...identityFields, ...cellarFields }).strict();
 
 export const WineEditSchema = z
   .object({
     ...identityFields,
     ...cellarFields,
-    bottleCount: z.number().int().min(0).max(MAXIMUM_BOTTLE_COUNT),
     drinkFromYear: z.number().int().min(1800).max(2200).nullable(),
     drinkUntilYear: z.number().int().min(1800).max(2200).nullable(),
   })
@@ -55,12 +46,9 @@ export const WineEditSchema = z
 
 export const AnalysisRequestSchema = z.object({ mode: z.enum(["full", "researchOnly"]) }).strict();
 
-export const MergeRequestSchema = z
-  .object({ bottleCount: z.number().int().min(1).max(MAXIMUM_BOTTLE_COUNT) })
-  .strict();
-
 export const TastingSchema = z
   .object({
+    placementId: z.number().int().positive().nullable(),
     tastedOn: z.iso.date(),
     starRating: z.number().int().min(1).max(5).nullable(),
     tastingNote: optionalLongText,

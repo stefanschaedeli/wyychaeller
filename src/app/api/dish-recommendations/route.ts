@@ -28,12 +28,17 @@ export async function POST(request: Request): Promise<Response> {
       shouldForceRefresh,
     );
     const currentYear = getCurrentYear();
+    const placementsByWine = container.placementRepository.listPlacementsByWine();
     const responseBody: DishRecommendationResponse = {
       dish: result.dish,
       isFromCache: result.isFromCache,
       createdAt: result.createdAt.toISOString(),
       recommendations: result.recommendations.map((recommendation) => ({
-        wine: toWineResponse(recommendation.wine, currentYear),
+        wine: toWineResponse(
+          recommendation.wine,
+          currentYear,
+          placementsByWine.get(recommendation.wine.id) ?? [],
+        ),
         reasoning: recommendation.reasoning,
         servingTip: recommendation.servingTip,
       })),

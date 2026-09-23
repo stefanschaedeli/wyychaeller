@@ -1,5 +1,4 @@
 import { readdir } from "node:fs/promises";
-import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AI_REQUESTS_PER_MINUTE } from "@/domain/constants";
 import { jsonRequest } from "@/server/testing/json-request";
@@ -10,57 +9,19 @@ import { POST as mergeWine } from "./[wineId]/merge/route";
 import { DELETE as deleteWine, GET as getWine, PATCH as editWine } from "./[wineId]/route";
 import { POST as recordTasting } from "./[wineId]/tastings/route";
 import { GET as listWines, POST as uploadWine } from "./route";
+import {
+  BASE_URL,
+  buildLabelUploadRequest,
+  confirmation,
+  describePlacements,
+  freeTextPlacement,
+  putPlacements,
+  routeContext,
+  uploadAndConfirm,
+  uploadLabel,
+} from "./wine-test-helpers";
 
-const BASE_URL = "http://localhost/api/wines";
 let testContainer: TestContainer;
-
-const confirmation = {
-  producer: "Marchesi Antinori",
-  name: "Tignanello",
-  vintage: 2018,
-  country: "Italien",
-  region: "Toskana",
-  appellation: "Toscana IGT",
-  grapeVarieties: ["Sangiovese"],
-  wineType: "red",
-  bottleCount: 6,
-  storageLocation: "Regal 2, Fach C",
-  purchasePricePerBottle: 95,
-};
-
-function routeContext(wineId: number) {
-  return { params: Promise.resolve({ wineId: String(wineId) }) };
-}
-
-async function buildLabelUploadRequest(): Promise<Request> {
-  const imageBytes = await sharp({
-    create: { width: 60, height: 80, channels: 3, background: "#f6f1e7" },
-  })
-    .jpeg()
-    .toBuffer();
-  const formData = new FormData();
-  formData.set(
-    "photo",
-    new File([new Uint8Array(imageBytes)], "label.jpg", { type: "image/jpeg" }),
-  );
-  return new Request(BASE_URL, { method: "POST", body: formData });
-}
-
-async function uploadLabel(): Promise<number> {
-  const response = await uploadWine(await buildLabelUploadRequest());
-  expect(response.status).toBe(201);
-  const { wine } = await response.json();
-  await testContainer.container.backgroundTasks.waitUntilIdle();
-  return wine.id;
-}
-
-async function uploadAndConfirm(): Promise<number> {
-  const wineId = await uploadLabel();
-  const url = `${BASE_URL}/${wineId}/confirmation`;
-  const response = await confirmWine(jsonRequest(url, "POST", confirmation), routeContext(wineId));
-  expect(response.status).toBe(200);
-  return wineId;
-}
 
 beforeEach(async () => {
   testContainer = await createTestContainer();
@@ -72,14 +33,16 @@ afterEach(async () => {
 
 describe("wine capture flow", () => {
   it("uploads a label, analyzes it in the background and confirms it", async () => {
-    const wineId = await uploadLabel();
+    const wineId = await uploadLabel(testContainer);
 
     const analyzed = await (await getWine(new Request(BASE_URL), routeContext(wineId))).json();
     expect(analyzed.wine.analysisStatus).toBe("awaitingConfirmation");
     expect(analyzed.wine.photoUrl).toMatch(/^\/api\/photos\/[0-9a-f-]{36}\.jpg$/);
     expect(analyzed.wine).not.toHaveProperty("photoFileName");
+    expect(analyzed.wine).not.toHaveProperty("storageLocation");
+    expect(analyzed.wine.placements).toEqual([]);
 
-    await uploadAndConfirm();
+    await uploadAndConfirm(testContainer);
     const listed = await (await listWines(new Request(BASE_URL))).json();
     expect(
       listed.wines.filter((wine: { bottleCount: number }) => wine.bottleCount === 6),
@@ -99,19 +62,28 @@ describe("wine capture flow", () => {
     }
   });
 
-  it("rejects confirmation with unknown fields or an invalid bottle count", async () => {
-    const wineId = await uploadLabel();
-    const url = `${BASE_URL}/${wineId}/confirmation`;
-    for (const invalidBody of [
-      { ...confirmation, bottleCount: 0 },
-      { ...confirmation, analysisStatus: "complete" },
-    ]) {
-      const response = await confirmWine(
-        jsonRequest(url, "POST", invalidBody),
-        routeContext(wineId),
-      );
-      expect(response.status).toBe(400);
-    }
+  it("rejects confirmation with unknown fields", async () => {
+    const wineId = await uploadLabel(testContainer);
+    const response = await confirmWine(
+      jsonRequest(`${BASE_URL}/${wineId}/confirmation`, "POST", {
+        ...confirmation,
+        analysisStatus: "complete",
+      }),
+      routeContext(wineId),
+    );
+    expect(response.status).toBe(400);
+  });
+
+  it("refuses to confirm a wine that has no bottles placed", async () => {
+    const wineId = await uploadLabel(testContainer);
+
+    const response = await confirmWine(
+      jsonRequest(`${BASE_URL}/${wineId}/confirmation`, "POST", confirmation),
+      routeContext(wineId),
+    );
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("noBottles");
   });
 
   it("rejects an upload once the AI rate limit is exhausted, leaving no orphan file", async () => {
@@ -128,9 +100,10 @@ describe("wine capture flow", () => {
     expect(listed.wines).toHaveLength(0);
   });
 
-  it("offers a merge for duplicates and adds the bottles to the existing wine", async () => {
-    const existingWineId = await uploadAndConfirm();
-    const duplicateWineId = await uploadLabel();
+  it("offers a merge for duplicates and moves the placements to the existing wine", async () => {
+    const existingWineId = await uploadAndConfirm(testContainer);
+    const duplicateWineId = await uploadLabel(testContainer);
+    await putPlacements(duplicateWineId, [freeTextPlacement("Kiste", 3)]);
 
     const confirmResponse = await confirmWine(
       jsonRequest(`${BASE_URL}/${duplicateWineId}/confirmation`, "POST", confirmation),
@@ -139,33 +112,46 @@ describe("wine capture flow", () => {
     expect((await confirmResponse.json()).error.code).toBe("isDuplicate");
 
     const mergeResponse = await mergeWine(
-      jsonRequest(`${BASE_URL}/${duplicateWineId}/merge`, "POST", { bottleCount: 3 }),
+      new Request(`${BASE_URL}/${duplicateWineId}/merge`, { method: "POST" }),
       routeContext(duplicateWineId),
     );
     const merged = await mergeResponse.json();
     expect(merged.wine.id).toBe(existingWineId);
     expect(merged.wine.bottleCount).toBe(9);
+    expect(describePlacements(merged.wine.placements)).toEqual([
+      ["Regal 2", 6],
+      ["Kiste", 3],
+    ]);
     expect((await getWine(new Request(BASE_URL), routeContext(duplicateWineId))).status).toBe(404);
+  });
+
+  it("refuses to merge a duplicate that has no bottles placed", async () => {
+    await uploadAndConfirm(testContainer);
+    const duplicateWineId = await uploadLabel(testContainer);
+
+    const response = await mergeWine(
+      new Request(`${BASE_URL}/${duplicateWineId}/merge`, { method: "POST" }),
+      routeContext(duplicateWineId),
+    );
+
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe("noBottles");
   });
 });
 
 describe("wine maintenance", () => {
   it("edits, records a tasting and deletes", async () => {
-    const wineId = await uploadAndConfirm();
-    // The confirmation route still sets bottleCount directly (Task 4 switches it to
-    // placements), so give the wine a placement here for the tasting to decrement.
-    testContainer.container.placementRepository.replacePlacements(wineId, [
-      { locationId: null, rowIndex: null, slotIndex: null, freeText: null, bottleCount: 6 },
-    ]);
+    const wineId = await uploadAndConfirm(testContainer);
 
     const edited = await editWine(
-      jsonRequest(`${BASE_URL}/${wineId}`, "PATCH", { storageLocation: "Regal 1" }),
+      jsonRequest(`${BASE_URL}/${wineId}`, "PATCH", { purchasePricePerBottle: 110 }),
       routeContext(wineId),
     );
-    expect((await edited.json()).wine.storageLocation).toBe("Regal 1");
+    expect((await edited.json()).wine.purchasePricePerBottle).toBe(110);
 
     const tastingResponse = await recordTasting(
       jsonRequest(`${BASE_URL}/${wineId}/tastings`, "POST", {
+        placementId: null,
         tastedOn: "2026-09-19",
         starRating: 5,
         tastingNote: "Grossartig",
@@ -181,7 +167,7 @@ describe("wine maintenance", () => {
   });
 
   it("re-rates a wine on request and refuses unknown ids", async () => {
-    const wineId = await uploadAndConfirm();
+    const wineId = await uploadAndConfirm(testContainer);
     const response = await startAnalysis(
       jsonRequest(`${BASE_URL}/${wineId}/analysis`, "POST", { mode: "researchOnly" }),
       routeContext(wineId),
@@ -193,7 +179,7 @@ describe("wine maintenance", () => {
   });
 
   it("filters the list", async () => {
-    await uploadAndConfirm();
+    await uploadAndConfirm(testContainer);
     const found = await (await listWines(new Request(`${BASE_URL}?search=tignan`))).json();
     const notFound = await (await listWines(new Request(`${BASE_URL}?wineType=white`))).json();
     expect(found.wines).toHaveLength(1);

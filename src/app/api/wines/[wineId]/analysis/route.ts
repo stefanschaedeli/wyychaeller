@@ -39,7 +39,11 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     container.backgroundTasks.run(container.wineAnalysisService.analyzeWine(wineId, mode));
 
     const responseWine = {
-      ...toWineResponse(preparedWine, getCurrentYear()),
+      ...toWineResponse(
+        preparedWine,
+        getCurrentYear(),
+        container.placementRepository.listPlacementsForWine(wineId),
+      ),
       analysisStatus: "analyzing" as const,
     };
     return Response.json({ wine: responseWine }, { status: 202 });

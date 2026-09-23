@@ -14,7 +14,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
   return handleRoute(request, async () => {
     const wineId = parseRecordId((await context.params).wineId);
     const tastingFields = TastingSchema.parse(await readJsonBody(request));
-    const { tastingRepository, wineRepository } = getServiceContainer();
+    const { tastingRepository, wineRepository, placementRepository } = getServiceContainer();
 
     const tasting = tastingRepository.recordTasting({ wineId, ...tastingFields });
     const wine = wineRepository.findWineById(wineId);
@@ -26,7 +26,14 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     });
 
     return Response.json(
-      { tasting: toTastingResponse(tasting), wine: toWineResponse(wine, getCurrentYear()) },
+      {
+        tasting: toTastingResponse(tasting),
+        wine: toWineResponse(
+          wine,
+          getCurrentYear(),
+          placementRepository.listPlacementsForWine(wineId),
+        ),
+      },
       { status: 201 },
     );
   });

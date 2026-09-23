@@ -18,7 +18,8 @@ export async function GET(request: Request): Promise<Response> {
     const query = WineListQuerySchema.parse(queryEntries);
     const currentYear = getCurrentYear();
 
-    const allWines = getServiceContainer().wineRepository.listWines();
+    const { wineRepository, placementRepository } = getServiceContainer();
+    const allWines = wineRepository.listWines();
     const visibleWines = filterWines(
       allWines,
       {
@@ -38,7 +39,12 @@ export async function GET(request: Request): Promise<Response> {
     const orderedWines =
       query.sort === "urgency" ? sortByDrinkingUrgency(combinedWines, currentYear) : combinedWines;
 
-    return Response.json({ wines: orderedWines.map((wine) => toWineResponse(wine, currentYear)) });
+    const placementsByWine = placementRepository.listPlacementsByWine();
+    return Response.json({
+      wines: orderedWines.map((wine) =>
+        toWineResponse(wine, currentYear, placementsByWine.get(wine.id) ?? []),
+      ),
+    });
   });
 }
 
@@ -67,6 +73,7 @@ export async function POST(request: Request): Promise<Response> {
     logger.info("Wine captured, analysis queued", { wineId: wine.id, photoFileName });
     container.backgroundTasks.run(container.wineAnalysisService.analyzeWine(wine.id, "full"));
 
-    return Response.json({ wine: toWineResponse(wine, getCurrentYear()) }, { status: 201 });
+    // A freshly captured wine has no placements yet; they are set after confirmation.
+    return Response.json({ wine: toWineResponse(wine, getCurrentYear(), []) }, { status: 201 });
   });
 }

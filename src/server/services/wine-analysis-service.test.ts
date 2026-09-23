@@ -8,7 +8,9 @@ import { resetLogging } from "../logging/logger";
 import { PhotoStorage } from "../photo-storage/photo-storage";
 import { AiUsageRepository } from "../repository/ai-usage-repository";
 import { SettingsRepository } from "../repository/settings-repository";
+import { PlacementRepository } from "../repository/placement-repository";
 import { WineRepository } from "../repository/wine-repository";
+import { placeUnplacedBottles } from "../testing/place-bottles";
 import { RecordedWineIntelligence } from "../wine-intelligence/recorded-wine-intelligence";
 import { captureLogLines } from "../testing/capture-log";
 import { WineIntelligenceError } from "../wine-intelligence/wine-intelligence";
@@ -17,6 +19,7 @@ import { WineAnalysisService } from "./wine-analysis-service";
 
 let photoDirectory: string;
 let wineRepository: WineRepository;
+let placementRepository: PlacementRepository;
 let settingsRepository: SettingsRepository;
 let wineIntelligence: RecordedWineIntelligence;
 let service: WineAnalysisService;
@@ -35,6 +38,7 @@ beforeEach(async () => {
   photoDirectory = await mkdtemp(path.join(tmpdir(), "weinkeller-analysis-"));
   const database = openDatabase(IN_MEMORY_DATABASE);
   wineRepository = new WineRepository(database);
+  placementRepository = new PlacementRepository(database);
   settingsRepository = new SettingsRepository(database);
   photoStorage = new PhotoStorage(photoDirectory);
   wineIntelligence = new RecordedWineIntelligence();
@@ -78,7 +82,8 @@ describe("WineAnalysisService.analyzeWine", () => {
   it("detects duplicates before paying for research", async () => {
     const firstWineId = await createWineWithPhoto();
     await service.analyzeWine(firstWineId, "full");
-    wineRepository.updateWine(firstWineId, { analysisStatus: "complete", bottleCount: 6 });
+    wineRepository.updateWine(firstWineId, { analysisStatus: "complete" });
+    placeUnplacedBottles(placementRepository, firstWineId, 6);
     const researchSpy = vi.spyOn(wineIntelligence, "researchWine");
 
     const secondWineId = await createWineWithPhoto();
@@ -146,7 +151,8 @@ describe("WineAnalysisService.analyzeWine", () => {
   it("re-rates a complete wine without losing data when research fails", async () => {
     const wineId = await createWineWithPhoto();
     await service.analyzeWine(wineId, "full");
-    wineRepository.updateWine(wineId, { analysisStatus: "complete", bottleCount: 6 });
+    wineRepository.updateWine(wineId, { analysisStatus: "complete" });
+    placeUnplacedBottles(placementRepository, wineId, 6);
     vi.spyOn(wineIntelligence, "researchWine").mockRejectedValue(
       new WineIntelligenceError("invalidResponse"),
     );
@@ -164,7 +170,8 @@ describe("WineAnalysisService.analyzeWine", () => {
   it("re-rates a complete wine and refreshes fields when research succeeds", async () => {
     const wineId = await createWineWithPhoto();
     await service.analyzeWine(wineId, "full");
-    wineRepository.updateWine(wineId, { analysisStatus: "complete", bottleCount: 6 });
+    wineRepository.updateWine(wineId, { analysisStatus: "complete" });
+    placeUnplacedBottles(placementRepository, wineId, 6);
     const researchResult = await new RecordedWineIntelligence().researchWine();
     vi.spyOn(wineIntelligence, "researchWine").mockResolvedValue({
       ...researchResult,

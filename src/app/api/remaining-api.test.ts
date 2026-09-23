@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { getRequest, jsonRequest } from "@/server/testing/json-request";
+import { placeUnplacedBottles } from "@/server/testing/place-bottles";
 import { createTestContainer, type TestContainer } from "@/server/testing/test-container";
 import { GET as getSummary } from "./cellar-summary/route";
 import { GET as listRecentDishes, POST as recommend } from "./dish-recommendations/route";
@@ -11,17 +12,17 @@ import { GET as listTastings } from "./tastings/route";
 let testContainer: TestContainer;
 
 function addCompleteWine(): number {
-  const { wineRepository } = testContainer.container;
+  const { wineRepository, placementRepository } = testContainer.container;
   const wine = wineRepository.createPendingWine("unused.jpg");
   wineRepository.updateWine(wine.id, {
     name: "Tignanello",
-    bottleCount: 6,
     purchasePricePerBottle: 95,
     estimatedMarketValue: 140,
     drinkFromYear: 2023,
     drinkUntilYear: 2038,
     analysisStatus: "complete",
   });
+  placeUnplacedBottles(placementRepository, wine.id, 6);
   return wine.id;
 }
 

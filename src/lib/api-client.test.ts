@@ -18,11 +18,11 @@ describe("apiClient", () => {
 
   it("sends JSON bodies", async () => {
     const fetchMock = stubFetch(Response.json({ wine: { id: 1 } }));
-    await apiClient.mergeWine(7, 3);
+    await apiClient.mergeWine(7);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/wines/7/merge");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body)).toEqual({ bottleCount: 3 });
+    expect(JSON.parse(init.body)).toEqual({});
   });
 
   it("turns error responses into ApiClientError with the server code", async () => {

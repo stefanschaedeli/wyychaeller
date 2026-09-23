@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
-import { TextField } from "@/components/shared/text-field";
-import { MINIMUM_NEW_BOTTLE_COUNT } from "@/domain/constants";
 import { apiClient } from "@/lib/api-client";
-import { parseBottleCount } from "@/lib/form-values";
 import { formatWineTitle } from "@/lib/german-labels";
 import { toErrorCode } from "@/lib/use-api-resource";
 import type { WineResponse } from "@/shared/api-contract";
@@ -19,17 +16,11 @@ export interface DuplicatePanelProps {
 }
 
 export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProps) {
-  const [bottleCountText, setBottleCountText] = useState("1");
   const [errorCode, setErrorCode] = useState<string | null>(null);
 
   async function mergeIntoExistingWine() {
-    const bottleCount = parseBottleCount(bottleCountText, MINIMUM_NEW_BOTTLE_COUNT);
-    if (bottleCount === null) {
-      setErrorCode("invalidInput");
-      return;
-    }
     try {
-      const { wine: existingWine } = await apiClient.mergeWine(wine.id, bottleCount);
+      const { wine: existingWine } = await apiClient.mergeWine(wine.id);
       onMerged(existingWine.id);
     } catch (error) {
       setErrorCode(toErrorCode(error));
@@ -45,12 +36,6 @@ export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProp
           Bestehenden Eintrag ansehen
         </Link>
       </p>
-      <TextField
-        label="Zusätzliche Flaschen"
-        value={bottleCountText}
-        onChange={setBottleCountText}
-        inputMode="numeric"
-      />
       {errorCode && <ErrorNotice errorCode={errorCode} />}
       <div className="flex flex-wrap gap-2">
         <button

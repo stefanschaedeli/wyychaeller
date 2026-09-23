@@ -36,7 +36,6 @@ function WineFacts({ wine }: { wine: WineResponse }) {
     formatWineOrigin(wine),
     wine.wineType ? WINE_TYPE_LABELS[wine.wineType] : null,
     formatBottleCount(wine.bottleCount),
-    wine.storageLocation,
   ].filter(Boolean);
   return <p className="eyebrow">{facts.join(" · ")}</p>;
 }

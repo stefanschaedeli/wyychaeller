@@ -3,24 +3,29 @@ import { IN_MEMORY_DATABASE, openDatabase } from "../database/connection";
 import { AiUsageRepository } from "../repository/ai-usage-repository";
 import { DishRecommendationRepository } from "../repository/dish-recommendation-repository";
 import { SettingsRepository } from "../repository/settings-repository";
+import { PlacementRepository } from "../repository/placement-repository";
 import { WineRepository } from "../repository/wine-repository";
+import { placeUnplacedBottles } from "../testing/place-bottles";
 import { RecordedWineIntelligence } from "../wine-intelligence/recorded-wine-intelligence";
 import { AiBudgetGuard } from "./ai-budget-guard";
 import { DishRecommendationService } from "./dish-recommendation-service";
 
 let wineRepository: WineRepository;
+let placementRepository: PlacementRepository;
 let wineIntelligence: RecordedWineIntelligence;
 let service: DishRecommendationService;
 
 function addCompleteWine(name: string, bottleCount: number): number {
   const wine = wineRepository.createPendingWine(`${name}.jpg`);
-  wineRepository.updateWine(wine.id, { name, bottleCount, analysisStatus: "complete" });
+  wineRepository.updateWine(wine.id, { name, analysisStatus: "complete" });
+  placeUnplacedBottles(placementRepository, wine.id, bottleCount);
   return wine.id;
 }
 
 beforeEach(() => {
   const database = openDatabase(IN_MEMORY_DATABASE);
   wineRepository = new WineRepository(database);
+  placementRepository = new PlacementRepository(database);
   wineIntelligence = new RecordedWineIntelligence();
   service = new DishRecommendationService({
     wineRepository,
@@ -65,7 +70,7 @@ describe("DishRecommendationService", () => {
     const pairingSpy = vi.spyOn(wineIntelligence, "recommendWinesForDish");
 
     await service.recommendForDish("Rindsfilet", true);
-    wineRepository.updateWine(wineId, { bottleCount: 5 });
+    placeUnplacedBottles(placementRepository, wineId, 5);
     await service.recommendForDish("Rindsfilet", false);
 
     expect(pairingSpy).toHaveBeenCalledTimes(2);

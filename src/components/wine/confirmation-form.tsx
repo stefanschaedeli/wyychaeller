@@ -3,9 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { TextField } from "@/components/shared/text-field";
-import { MINIMUM_NEW_BOTTLE_COUNT } from "@/domain/constants";
 import { apiClient } from "@/lib/api-client";
-import { parseBottleCount, parseOptionalNumber, toNullableText } from "@/lib/form-values";
+import { parseOptionalNumber } from "@/lib/form-values";
 import { toErrorCode } from "@/lib/use-api-resource";
 import type { WineResponse } from "@/shared/api-contract";
 import { IdentityFields, toIdentityFormValues, toIdentityRequest } from "./identity-fields";
@@ -17,26 +16,16 @@ export interface ConfirmationFormProps {
 
 export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
   const [identityValues, setIdentityValues] = useState(() => toIdentityFormValues(wine));
-  const [bottleCountText, setBottleCountText] = useState("1");
-  const [storageLocation, setStorageLocation] = useState("");
   const [purchasePriceText, setPurchasePriceText] = useState("");
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   async function confirmWine(event: FormEvent) {
     event.preventDefault();
-    const bottleCount = parseBottleCount(bottleCountText, MINIMUM_NEW_BOTTLE_COUNT);
-    if (bottleCount === null) {
-      setErrorCode("invalidInput");
-      return;
-    }
-
     setIsSaving(true);
     try {
       await apiClient.confirmWine(wine.id, {
         ...toIdentityRequest(identityValues),
-        bottleCount,
-        storageLocation: toNullableText(storageLocation),
         purchasePricePerBottle: parseOptionalNumber(purchasePriceText),
       });
       onConfirmed();
@@ -52,19 +41,6 @@ export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
       <IdentityFields values={identityValues} onChange={setIdentityValues} />
       <fieldset className="card grid gap-3 md:grid-cols-3">
         <legend className="eyebrow px-1">Im Keller</legend>
-        <TextField
-          label="Anzahl Flaschen"
-          value={bottleCountText}
-          onChange={setBottleCountText}
-          inputMode="numeric"
-          isRequired
-        />
-        <TextField
-          label="Lagerort"
-          value={storageLocation}
-          onChange={setStorageLocation}
-          placeholder="z. B. Regal 2, Fach C"
-        />
         <TextField
           label="Kaufpreis pro Flasche"
           value={purchasePriceText}

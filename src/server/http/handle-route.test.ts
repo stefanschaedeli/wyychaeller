@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { InvalidPhotoError } from "../photo-storage/photo-storage";
-import { RecordNotFoundError } from "../repository/errors";
+import {
+  InvalidPlacementError,
+  PlacementChoiceRequiredError,
+  RecordNotFoundError,
+} from "../repository/errors";
 import { AiBudgetExceededError } from "../services/ai-budget-guard";
 import { WineIntelligenceError } from "../wine-intelligence/wine-intelligence";
 import { ApiError } from "./api-error";
@@ -36,6 +40,8 @@ describe("handleRoute", () => {
     [new AiBudgetExceededError(), 429, "budgetExceeded"],
     [new WineIntelligenceError("missingApiKey"), 503, "missingApiKey"],
     [new WineIntelligenceError("invalidResponse"), 502, "invalidResponse"],
+    [new InvalidPlacementError("Position is outside the grid"), 400, "invalidPlacement"],
+    [new PlacementChoiceRequiredError("Several placements"), 409, "placementRequired"],
   ])("maps %o to status %i with code %s", async (error, expectedStatus, expectedCode) => {
     const result = await runFailing(error);
     expect(result.status).toBe(expectedStatus);

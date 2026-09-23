@@ -1,3 +1,4 @@
+import type { SlotLabelStyle, StorageLocationKind } from "@/domain/storage-location";
 import type {
   AnalysisErrorCode,
   AnalysisStatus,
@@ -6,6 +7,56 @@ import type {
   ResearchConfidence,
   WineType,
 } from "@/domain/wine-types";
+
+export interface BottlePlacementRequest {
+  locationId: number | null;
+  rowIndex: number | null;
+  slotIndex: number | null;
+  freeText: string | null;
+  bottleCount: number;
+}
+
+export interface BottlePlacementResponse extends BottlePlacementRequest {
+  id: number;
+  locationName: string | null;
+  description: string;
+}
+
+export interface PlacedBottleResponse extends BottlePlacementResponse {
+  wineId: number;
+  wineProducer: string | null;
+  wineName: string | null;
+  wineVintage: number | null;
+}
+
+export type StorageLocationRequest =
+  | { kind: "simple"; name: string }
+  | {
+      kind: "grid";
+      name: string;
+      rowCount: number;
+      slotsPerRow: number;
+      slotLabelStyle: SlotLabelStyle;
+    };
+
+export interface StorageLocationResponse {
+  id: number;
+  name: string;
+  kind: StorageLocationKind;
+  rowCount: number | null;
+  slotsPerRow: number | null;
+  slotLabelStyle: SlotLabelStyle | null;
+  bottleCount: number;
+}
+
+export interface StorageOverviewResponse {
+  locations: StorageLocationResponse[];
+  placements: PlacedBottleResponse[];
+}
+
+export interface PlacementsRequest {
+  placements: BottlePlacementRequest[];
+}
 
 export interface WineResponse {
   id: number;
@@ -19,7 +70,7 @@ export interface WineResponse {
   wineType: WineType | null;
   alcoholPercent: number | null;
   bottleCount: number;
-  storageLocation: string | null;
+  placements: BottlePlacementResponse[];
   purchasePricePerBottle: number | null;
   photoUrl: string;
   styleClassification: string | null;
@@ -94,8 +145,6 @@ export interface WineIdentityRequestFields {
 }
 
 export interface WineConfirmationRequest extends WineIdentityRequestFields {
-  bottleCount: number;
-  storageLocation: string | null;
   purchasePricePerBottle: number | null;
 }
 
@@ -104,6 +153,7 @@ export type WineEditRequest = Partial<
 >;
 
 export interface TastingRequest {
+  placementId: number | null;
   tastedOn: string;
   starRating: number | null;
   tastingNote: string | null;

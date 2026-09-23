@@ -32,7 +32,6 @@ export const wines = sqliteTable("wines", {
   alcoholPercent: real("alcohol_percent"),
 
   bottleCount: integer("bottle_count").notNull().default(0),
-  storageLocation: text("storage_location"),
   purchasePricePerBottle: real("purchase_price_per_bottle"),
   photoFileName: text("photo_file_name").notNull(),
 

@@ -4,7 +4,9 @@ import type { WineCellarDatabase } from "../database/connection";
 import { wines, type NewWineRecord, type WineRecord } from "../database/schema";
 import { RecordNotFoundError } from "./errors";
 
-export type WineChanges = Partial<Omit<NewWineRecord, "id" | "createdAt" | "updatedAt">>;
+export type WineChanges = Partial<
+  Omit<NewWineRecord, "id" | "createdAt" | "updatedAt" | "bottleCount">
+>;
 
 export class WineRepository {
   constructor(private readonly database: WineCellarDatabase) {}

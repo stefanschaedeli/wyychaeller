@@ -88,8 +88,7 @@ export const apiClient = {
   confirmWine: (wineId: number, fields: WineConfirmationRequest) =>
     sendJson<WineEnvelope>(`/api/wines/${wineId}/confirmation`, "POST", fields),
 
-  mergeWine: (wineId: number, bottleCount: number) =>
-    sendJson<WineEnvelope>(`/api/wines/${wineId}/merge`, "POST", { bottleCount }),
+  mergeWine: (wineId: number) => sendJson<WineEnvelope>(`/api/wines/${wineId}/merge`, "POST", {}),
 
   startAnalysis: (wineId: number, mode: "full" | "researchOnly") =>
     sendJson<WineEnvelope>(`/api/wines/${wineId}/analysis`, "POST", { mode }),

@@ -117,7 +117,6 @@ describe("PlacementRepository", () => {
 
   it("drops non-positive merged placements and clears bottle count to zero", () => {
     const wine = wineRepository.createPendingWine("label.jpg");
-    wineRepository.updateWine(wine.id, { bottleCount: 5 });
     placementRepository.replacePlacements(wine.id, [freeTextPlacement(3)]);
 
     const result = placementRepository.replacePlacements(wine.id, [
@@ -158,5 +157,24 @@ describe("PlacementRepository", () => {
     expect(merged.bottleCount).toBe(5);
     expect(placementRepository.listPlacementsForWine(existingWine.id)).toHaveLength(1);
     expect(wineRepository.findWineById(duplicateWine.id)).toBeNull();
+  });
+
+  it("keeps both wines' placements apart when they sit in different places", () => {
+    const existingWine = wineRepository.createPendingWine("existing.jpg");
+    const duplicateWine = wineRepository.createPendingWine("duplicate.jpg");
+    placementRepository.replacePlacements(existingWine.id, [freeTextPlacement(6, "Regal 2")]);
+    placementRepository.replacePlacements(duplicateWine.id, [freeTextPlacement(3, "Kiste")]);
+
+    const merged = placementRepository.mergeDuplicateInto(duplicateWine.id, existingWine.id);
+
+    expect(merged.bottleCount).toBe(9);
+    expect(
+      placementRepository
+        .listPlacementsForWine(existingWine.id)
+        .map((placement) => [placement.freeText, placement.bottleCount]),
+    ).toEqual([
+      ["Regal 2", 6],
+      ["Kiste", 3],
+    ]);
   });
 });

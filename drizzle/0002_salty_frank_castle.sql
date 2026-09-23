@@ -1,0 +1,1 @@
+ALTER TABLE `wines` DROP COLUMN `storage_location`;

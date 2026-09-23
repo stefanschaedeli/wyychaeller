@@ -92,9 +92,20 @@ function insertPlacements(
   placements: BottlePlacement[],
 ): void {
   if (placements.length === 0) return;
+  // Callers may pass stored rows (e.g. when merging two wines), so only the position
+  // fields are copied: carrying an existing `id` over would collide on insert.
   transaction
     .insert(bottlePlacements)
-    .values(placements.map((placement) => ({ ...placement, wineId })))
+    .values(
+      placements.map(({ locationId, rowIndex, slotIndex, freeText, bottleCount }) => ({
+        wineId,
+        locationId,
+        rowIndex,
+        slotIndex,
+        freeText,
+        bottleCount,
+      })),
+    )
     .run();
 }
 

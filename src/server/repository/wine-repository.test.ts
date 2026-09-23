@@ -1,12 +1,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { placeUnplacedBottles } from "@/server/testing/place-bottles";
 import { IN_MEMORY_DATABASE, openDatabase } from "../database/connection";
 import { RecordNotFoundError } from "./errors";
+import { PlacementRepository } from "./placement-repository";
 import { WineRepository } from "./wine-repository";
 
 let wineRepository: WineRepository;
+let placementRepository: PlacementRepository;
 
 beforeEach(() => {
-  wineRepository = new WineRepository(openDatabase(IN_MEMORY_DATABASE));
+  const database = openDatabase(IN_MEMORY_DATABASE);
+  wineRepository = new WineRepository(database);
+  placementRepository = new PlacementRepository(database);
 });
 
 describe("WineRepository", () => {
@@ -25,10 +30,8 @@ describe("WineRepository", () => {
     const createdWine = wineRepository.createPendingWine("label.jpg");
     await new Promise((resolve) => setTimeout(resolve, 5));
 
-    const updatedWine = wineRepository.updateWine(createdWine.id, {
-      producer: "Antinori",
-      bottleCount: 6,
-    });
+    placeUnplacedBottles(placementRepository, createdWine.id, 6);
+    const updatedWine = wineRepository.updateWine(createdWine.id, { producer: "Antinori" });
 
     expect(updatedWine.producer).toBe("Antinori");
     expect(updatedWine.bottleCount).toBe(6);
@@ -36,7 +39,9 @@ describe("WineRepository", () => {
   });
 
   it("throws RecordNotFoundError when updating an unknown wine", () => {
-    expect(() => wineRepository.updateWine(999, { bottleCount: 1 })).toThrow(RecordNotFoundError);
+    expect(() => wineRepository.updateWine(999, { producer: "Antinori" })).toThrow(
+      RecordNotFoundError,
+    );
   });
 
   it("deletes a wine", () => {

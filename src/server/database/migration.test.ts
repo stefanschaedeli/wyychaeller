@@ -39,29 +39,37 @@ function markZeroMigrationAsApplied(rawDatabase: Database.Database): void {
     .run("0000_broken_wolfpack", readZeroMigrationTimestamp());
 }
 
-describe("migration 0001", () => {
+function insertWineWithStorageLocation(
+  rawDatabase: Database.Database,
+  bottleCount: number,
+  storageLocation: string,
+  photoFileName: string,
+): void {
+  rawDatabase
+    .prepare(
+      `INSERT INTO wines (grape_varieties, bottle_count, storage_location, photo_file_name, critic_scores, food_pairings, analysis_status, created_at, updated_at)
+       VALUES ('[]', ?, ?, ?, '[]', '[]', 'pending', 0, 0)`,
+    )
+    .run(bottleCount, storageLocation, photoFileName);
+}
+
+function migrateFromZeroMigration(): Database.Database {
+  const rawDatabase = new Database(":memory:");
+  applyZeroMigration(rawDatabase);
+  markZeroMigrationAsApplied(rawDatabase);
+
+  insertWineWithStorageLocation(rawDatabase, 6, "Regal 2", "a.jpg");
+  insertWineWithStorageLocation(rawDatabase, 0, "Kiste", "b.jpg");
+
+  migrate(drizzle(rawDatabase), { migrationsFolder: MIGRATIONS_FOLDER });
+  return rawDatabase;
+}
+
+describe("migrations 0001 and 0002", () => {
   it("copies existing storage locations into bottle placements as free text", () => {
-    const rawDatabase = new Database(":memory:");
-    applyZeroMigration(rawDatabase);
-    markZeroMigrationAsApplied(rawDatabase);
+    const rawDatabase = migrateFromZeroMigration();
 
-    rawDatabase
-      .prepare(
-        `INSERT INTO wines (grape_varieties, bottle_count, storage_location, photo_file_name, critic_scores, food_pairings, analysis_status, created_at, updated_at)
-         VALUES ('[]', 6, 'Regal 2', 'a.jpg', '[]', '[]', 'pending', 0, 0)`,
-      )
-      .run();
-    rawDatabase
-      .prepare(
-        `INSERT INTO wines (grape_varieties, bottle_count, storage_location, photo_file_name, critic_scores, food_pairings, analysis_status, created_at, updated_at)
-         VALUES ('[]', 0, 'Kiste', 'b.jpg', '[]', '[]', 'pending', 0, 0)`,
-      )
-      .run();
-
-    const database = drizzle(rawDatabase);
-    migrate(database, { migrationsFolder: MIGRATIONS_FOLDER });
-
-    const placements = database.select().from(bottlePlacements).all();
+    const placements = drizzle(rawDatabase).select().from(bottlePlacements).all();
 
     expect(placements).toHaveLength(1);
     expect(placements[0]).toMatchObject({
@@ -69,5 +77,22 @@ describe("migration 0001", () => {
       bottleCount: 6,
       locationId: null,
     });
+  });
+
+  it("drops the free-text storage_location column from wines but keeps the wines", () => {
+    const rawDatabase = migrateFromZeroMigration();
+
+    const columnNames = rawDatabase
+      .prepare("PRAGMA table_info(wines)")
+      .all()
+      .map((column) => (column as { name: string }).name);
+    const wineRows = rawDatabase.prepare("SELECT photo_file_name, bottle_count FROM wines").all();
+
+    expect(columnNames).not.toContain("storage_location");
+    expect(columnNames).toContain("bottle_count");
+    expect(wineRows).toEqual([
+      { photo_file_name: "a.jpg", bottle_count: 6 },
+      { photo_file_name: "b.jpg", bottle_count: 0 },
+    ]);
   });
 });

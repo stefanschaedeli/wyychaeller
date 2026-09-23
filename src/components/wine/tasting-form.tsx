@@ -26,6 +26,7 @@ export function TastingForm({ wineId, onRecorded, onCancel }: TastingFormProps) 
     event.preventDefault();
     try {
       await apiClient.recordTasting(wineId, {
+        placementId: null,
         tastedOn: getTodayAsIsoDate(new Date()),
         starRating,
         tastingNote: toNullableText(tastingNote),

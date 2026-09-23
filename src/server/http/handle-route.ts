@@ -71,6 +71,12 @@ function toApiError(error: unknown): ApiError {
     return toApiErrorFromForeignApiError(error) ?? logUnexpected(error);
   }
   if (hasName(error, "RecordNotFoundError")) return new ApiError(404, "notFound", error.message);
+  if (hasName(error, "InvalidPlacementError")) {
+    return new ApiError(400, "invalidPlacement", error.message);
+  }
+  if (hasName(error, "PlacementChoiceRequiredError")) {
+    return new ApiError(409, "placementRequired", error.message);
+  }
   if (hasName(error, "AiBudgetExceededError")) {
     return new ApiError(429, "budgetExceeded", error.message);
   }
