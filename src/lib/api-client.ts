@@ -1,8 +1,12 @@
 import type {
   ApiErrorBody,
+  BottlePlacementRequest,
   CellarSummaryResponse,
   DishRecommendationResponse,
   SettingsResponse,
+  StorageLocationRequest,
+  StorageLocationResponse,
+  StorageOverviewResponse,
   TastingHistoryEntry,
   TastingRequest,
   TastingResponse,
@@ -116,4 +120,25 @@ export const apiClient = {
 
   saveSettings: (settings: SettingsResponse) =>
     sendJson<SettingsResponse>("/api/settings", "PUT", settings),
+
+  listStorageLocations: () =>
+    request<{ locations: StorageLocationResponse[] }>("/api/storage-locations"),
+
+  createStorageLocation: (location: StorageLocationRequest) =>
+    sendJson<{ location: StorageLocationResponse }>("/api/storage-locations", "POST", location),
+
+  updateStorageLocation: (locationId: number, location: StorageLocationRequest) =>
+    sendJson<{ location: StorageLocationResponse; convertedPlacementCount: number }>(
+      `/api/storage-locations/${locationId}`,
+      "PUT",
+      location,
+    ),
+
+  deleteStorageLocation: (locationId: number) =>
+    request<void>(`/api/storage-locations/${locationId}`, { method: "DELETE" }),
+
+  getStorageOverview: () => request<StorageOverviewResponse>("/api/storage-overview"),
+
+  savePlacements: (wineId: number, placements: BottlePlacementRequest[]) =>
+    sendJson<WineEnvelope>(`/api/wines/${wineId}/placements`, "PUT", { placements }),
 };

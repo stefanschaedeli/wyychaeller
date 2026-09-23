@@ -38,4 +38,54 @@ describe("apiClient", () => {
     await expect(apiClient.getSettings()).rejects.toBeInstanceOf(ApiClientError);
     await expect(apiClient.getSettings()).rejects.toMatchObject({ code: "offline" });
   });
+
+  it("lists storage locations", async () => {
+    const fetchMock = stubFetch(Response.json({ locations: [] }));
+    await apiClient.listStorageLocations();
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/storage-locations");
+  });
+
+  it("creates a storage location", async () => {
+    const fetchMock = stubFetch(Response.json({ location: { id: 1 } }));
+    await apiClient.createStorageLocation({ kind: "simple", name: "Keller" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/storage-locations");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ kind: "simple", name: "Keller" });
+  });
+
+  it("updates a storage location", async () => {
+    const fetchMock = stubFetch(Response.json({ location: { id: 1 }, convertedPlacementCount: 0 }));
+    await apiClient.updateStorageLocation(1, { kind: "simple", name: "Keller" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/storage-locations/1");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body)).toEqual({ kind: "simple", name: "Keller" });
+  });
+
+  it("deletes a storage location", async () => {
+    const fetchMock = stubFetch(new Response(null, { status: 204 }));
+    await apiClient.deleteStorageLocation(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/storage-locations/1");
+    expect(init.method).toBe("DELETE");
+  });
+
+  it("gets the storage overview", async () => {
+    const fetchMock = stubFetch(Response.json({ locations: [], placements: [] }));
+    await apiClient.getStorageOverview();
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/storage-overview");
+  });
+
+  it("saves placements for a wine", async () => {
+    const fetchMock = stubFetch(Response.json({ wine: { id: 1 } }));
+    const placements = [
+      { locationId: 1, rowIndex: null, slotIndex: null, freeText: null, bottleCount: 2 },
+    ];
+    await apiClient.savePlacements(1, placements);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/wines/1/placements");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body)).toEqual({ placements });
+  });
 });
