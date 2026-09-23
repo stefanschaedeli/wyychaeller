@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
+import { PlacementSummary } from "@/components/storage/placement-summary";
 import { apiClient } from "@/lib/api-client";
 import { formatWineTitle } from "@/lib/german-labels";
 import { toErrorCode } from "@/lib/use-api-resource";
@@ -36,6 +37,7 @@ export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProp
           Bestehenden Eintrag ansehen
         </Link>
       </p>
+      <PlacementSummary wine={wine} changeHref={`/wines/${wine.id}/lagerort`} />
       {errorCode && <ErrorNotice errorCode={errorCode} />}
       <div className="flex flex-wrap gap-2">
         <button

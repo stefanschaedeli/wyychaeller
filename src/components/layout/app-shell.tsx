@@ -5,15 +5,20 @@ import { useCallback, type ReactNode } from "react";
 import { CaptureButton } from "@/components/capture/capture-button";
 import { usePhotoUpload } from "@/lib/use-photo-upload";
 import { notifyWineUploaded } from "@/lib/wine-upload-events";
+import type { WineResponse } from "@/shared/api-contract";
 import { Navigation } from "./navigation";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const goToCapturePageWithNewWine = useCallback(() => {
-    notifyWineUploaded();
-    router.push("/capture");
-  }, [router]);
-  const photoUpload = usePhotoUpload(goToCapturePageWithNewWine);
+  // The picker comes first: the wine needs bottles before it can be confirmed.
+  const goToPlacementPicker = useCallback(
+    (wine: WineResponse) => {
+      notifyWineUploaded();
+      router.push(`/wines/${wine.id}/lagerort`);
+    },
+    [router],
+  );
+  const photoUpload = usePhotoUpload(goToPlacementPicker);
 
   return (
     <div className="min-h-dvh md:flex">

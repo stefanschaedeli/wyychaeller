@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { TextField } from "@/components/shared/text-field";
+import { PlacementSummary } from "@/components/storage/placement-summary";
 import { apiClient } from "@/lib/api-client";
 import { parseOptionalInteger, parseOptionalNumber, toInputText } from "@/lib/form-values";
 import { toErrorCode } from "@/lib/use-api-resource";
@@ -38,6 +39,13 @@ export function CellarEditForm({ wine, onSaved, onCancel }: CellarEditFormProps)
 
   return (
     <form onSubmit={(event) => void saveChanges(event)} className="card grid gap-3 md:grid-cols-2">
+      <div className="md:col-span-2">
+        <PlacementSummary
+          wine={wine}
+          changeHref={`/wines/${wine.id}/lagerort`}
+          changeLabel="Lagerung ändern"
+        />
+      </div>
       <TextField
         label="Kaufpreis pro Flasche"
         value={purchasePriceText}

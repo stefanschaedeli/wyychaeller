@@ -79,6 +79,9 @@ describe("german labels", () => {
 
   it("explains known error codes and falls back for unknown ones", () => {
     expect(describeError("missingApiKey")).toContain("API-Schlüssel");
+    expect(describeError("placementRequired")).toBe(
+      "Bitte wähle, aus welchem Lagerort die Flasche stammt.",
+    );
     expect(describeError("somethingNew")).toBe(
       "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     );

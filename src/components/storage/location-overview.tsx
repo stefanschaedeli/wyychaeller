@@ -1,31 +1,13 @@
 "use client";
 
-import { buildPlacementKey } from "@/domain/storage-location";
 import { formatBottleCount } from "@/lib/german-labels";
+import { buildOccupancy } from "@/lib/slot-occupancy";
 import { groupUnplacedByDescription } from "@/lib/storage-overview-groups";
 import type { PlacedBottleResponse, StorageOverviewResponse } from "@/shared/api-contract";
 import { LocationOverviewCard } from "./location-overview-card";
 import { PlacementWineList } from "./placement-wine-list";
-import type { SlotOccupancy } from "./slot-grid";
 
 const FREE_TEXT_CARD_TITLE = "Freitext und offen";
-
-/** Placements of grid locations by slot key, so every cell can show its own bottle count. */
-function buildOccupancy(placements: PlacedBottleResponse[]): Map<string, SlotOccupancy> {
-  const occupancy = new Map<string, SlotOccupancy>();
-  for (const placement of placements) {
-    if (placement.locationId === null) continue;
-    const key = buildPlacementKey(placement);
-    const slot = occupancy.get(key);
-    if (slot === undefined) {
-      occupancy.set(key, { bottleCount: placement.bottleCount, placements: [placement] });
-    } else {
-      slot.bottleCount += placement.bottleCount;
-      slot.placements.push(placement);
-    }
-  }
-  return occupancy;
-}
 
 function FreeTextCard({ placements }: { placements: PlacedBottleResponse[] }) {
   const groups = groupUnplacedByDescription(placements);

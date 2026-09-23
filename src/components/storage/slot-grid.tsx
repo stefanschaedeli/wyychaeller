@@ -1,13 +1,11 @@
 "use client";
 
 import { buildPlacementKey, formatRowLabel } from "@/domain/storage-location";
-import type { PlacedBottleResponse, StorageLocationResponse } from "@/shared/api-contract";
+import type { SlotOccupancy } from "@/lib/slot-occupancy";
+import type { StorageLocationResponse } from "@/shared/api-contract";
 import { SlotCell } from "./slot-cell";
 
-export interface SlotOccupancy {
-  bottleCount: number;
-  placements: PlacedBottleResponse[];
-}
+export type { SlotOccupancy };
 
 export interface SlotGridProps {
   location: StorageLocationResponse;

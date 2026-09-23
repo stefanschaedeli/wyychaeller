@@ -22,20 +22,43 @@ test("shows an inviting empty cellar", async ({ page }) => {
   await expect(page.getByLabel("Trinkreife")).toBeVisible();
 });
 
+test("creates storage locations", async ({ page }) => {
+  await page.goto("/more/settings/lagerorte");
+
+  await page.getByRole("button", { name: "Neuer Lagerort" }).click();
+  await page.getByLabel("Name").fill("Weinschrank");
+  await page.getByLabel("Art").selectOption("grid");
+  await page.getByLabel("Reihen").fill("3");
+  await page.getByLabel("Plätze pro Reihe").selectOption("leftRight");
+  await page.getByRole("button", { name: "Lagerort speichern" }).click();
+
+  await expect(page.getByText(/3 Reihen × 2 Plätze/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Neuer Lagerort" }).click();
+  await page.getByLabel("Name").fill("Regal 1");
+  await page.getByLabel("Art").selectOption("simple");
+  await page.getByRole("button", { name: "Lagerort speichern" }).click();
+
+  await expect(page.getByText("Regal 1")).toBeVisible();
+});
+
 const LABEL_FIXTURE = "e2e/fixtures/label.jpg";
 
 test("captures a wine from a label photo and confirms it", async ({ page }) => {
   await page.goto("/capture");
   await page.getByLabel("Etikett fotografieren").first().setInputFiles(LABEL_FIXTURE);
 
-  const captureEntry = page.getByRole("link", { name: /Tignanello 2018/ });
-  await expect(captureEntry).toContainText("bitte bestätigen", { timeout: 15_000 });
-  await captureEntry.click();
-
-  await expect(page.getByRole("heading", { name: "Stimmt das so?" })).toBeVisible();
-  await expect(page.getByLabel("Weingut")).toHaveValue("Marchesi Antinori");
+  await expect(page.getByRole("heading", { name: "Wo liegen die Flaschen?" })).toBeVisible();
+  await page.getByRole("button", { name: "Weinschrank" }).click();
+  await page.getByRole("button", { name: /^Reihe 2, links/ }).click();
   await page.getByLabel("Anzahl Flaschen").fill("6");
-  await page.getByLabel("Lagerort").fill("Regal 2, Fach C");
+  await page.getByRole("button", { name: "Fertig" }).click();
+
+  await expect(page.getByRole("heading", { name: "Stimmt das so?" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByLabel("Weingut")).toHaveValue("Marchesi Antinori");
+  await expect(page.getByText("6 Flaschen · Weinschrank, Reihe 2, links")).toBeVisible();
   await page.getByLabel("Kaufpreis pro Flasche").fill("95");
   await page.getByRole("button", { name: "In den Keller legen" }).click();
 
@@ -65,7 +88,7 @@ test("shows the assessment and records a tasting", async ({ page }) => {
   await expect(page.getByText("Bistecca alla fiorentina")).toBeVisible();
   const sourceLink = page.getByRole("link", { name: /Beispielquelle/ });
   await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
-  await expect(page.getByText("Regal 2, Fach C")).toBeVisible();
+  await expect(page.getByText("Weinschrank, Reihe 2, links")).toBeVisible();
 
   await page.getByRole("button", { name: "Flasche getrunken" }).click();
   await page.getByRole("radio", { name: "4 Sterne" }).check();
@@ -76,14 +99,21 @@ test("shows the assessment and records a tasting", async ({ page }) => {
   await expect(page.getByText("Dunkle Kirsche, sehr lang.")).toBeVisible();
 });
 
-test("edits cellar data", async ({ page }) => {
+test("moves the bottles to another storage location", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Tignanello 2018/ }).click();
   await page.getByRole("button", { name: "Bearbeiten" }).click();
-  await page.getByLabel("Lagerort").fill("Regal 1");
-  await page.getByRole("button", { name: "Änderungen speichern" }).click();
+  await page.getByRole("link", { name: "Lagerung ändern" }).click();
 
+  await expect(page.getByRole("heading", { name: "Wo liegen die Flaschen?" })).toBeVisible();
+  await page.getByRole("button", { name: "Weinschrank, Reihe 2, links entfernen" }).click();
+  await page.getByRole("button", { name: /^Regal 1/ }).click();
+  await page.getByLabel("Anzahl Flaschen").fill("5");
+  await page.getByRole("button", { name: "Fertig" }).click();
+
+  await expect(page.getByRole("heading", { name: "Tignanello 2018" })).toBeVisible();
   await expect(page.getByText("Regal 1")).toBeVisible();
+  await expect(page.getByText("5 Flaschen")).toBeVisible();
 });
 
 test("lists nothing urgent for a young cellar", async ({ page }) => {
@@ -127,15 +157,39 @@ test("saves settings", async ({ page }) => {
 test("recognises a wine that is already in the cellar and merges the bottles", async ({ page }) => {
   await page.goto("/capture");
   await page.getByLabel("Etikett fotografieren").first().setInputFiles(LABEL_FIXTURE);
-  const captureEntry = page.getByRole("link", { name: /Tignanello 2018/ });
-  await expect(captureEntry).toContainText("bitte bestätigen", { timeout: 15_000 });
-  await captureEntry.click();
 
-  await expect(page.getByRole("heading", { name: "Schon im Keller" })).toBeVisible();
-  await page.getByLabel("Zusätzliche Flaschen").fill("3");
+  await expect(page.getByRole("heading", { name: "Wo liegen die Flaschen?" })).toBeVisible();
+  await page.getByRole("button", { name: /^Regal 1/ }).click();
+  await page.getByLabel("Anzahl Flaschen").fill("3");
+  await page.getByRole("button", { name: "Fertig" }).click();
+
+  await expect(page.getByRole("heading", { name: "Schon im Keller" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByText("3 Flaschen · Regal 1")).toBeVisible();
   await page.getByRole("button", { name: "Bestand erhöhen" }).click();
 
   await expect(page.getByText("8 Flaschen")).toBeVisible();
+});
+
+test("browses the cellar by storage location and keeps bottles after a deletion", async ({
+  page,
+}) => {
+  await page.goto("/more/lagerorte");
+  const regalCard = page.locator("section", { hasText: "Regal 1" }).first();
+  await expect(regalCard).toContainText("8 Flaschen");
+  await expect(regalCard.getByRole("link", { name: /Tignanello 2018/ })).toBeVisible();
+
+  await page.goto("/more/settings/lagerorte");
+  const regalRow = page.getByRole("listitem").filter({ hasText: "Regal 1" });
+  await regalRow.getByRole("button", { name: "Löschen" }).click();
+  await regalRow.getByRole("button", { name: "Endgültig löschen" }).click();
+  await expect(regalRow).toHaveCount(0);
+
+  await page.goto("/more/lagerorte");
+  const freeTextCard = page.locator("section", { hasText: "Freitext und offen" }).first();
+  await expect(freeTextCard).toContainText("Regal 1");
+  await expect(freeTextCard).toContainText("8 Flaschen");
 });
 
 test("serves a web app manifest for installation", async ({ page }) => {

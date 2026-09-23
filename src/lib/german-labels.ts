@@ -64,7 +64,7 @@ const ERROR_MESSAGES: Record<string, string> = {
     "Dieser Wein wartet nicht mehr auf eine Bestätigung. Lade die Seite neu.",
   notADuplicate: "Dieser Wein ist kein Duplikat und kann nicht zusammengeführt werden.",
   invalidPlacement: "Diese Position ist für den gewählten Lagerort ungültig.",
-  placementRequired: "Bitte wähle mindestens einen Lagerort.",
+  placementRequired: "Bitte wähle, aus welchem Lagerort die Flasche stammt.",
   noBottles: "Bitte gib mindestens eine Flasche an.",
   tooManyLocations: "Es sind bereits zu viele Lagerorte angelegt.",
 };

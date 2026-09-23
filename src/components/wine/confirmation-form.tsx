@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { TextField } from "@/components/shared/text-field";
+import { PlacementSummary } from "@/components/storage/placement-summary";
 import { apiClient } from "@/lib/api-client";
 import { parseOptionalNumber } from "@/lib/form-values";
 import { toErrorCode } from "@/lib/use-api-resource";
@@ -19,6 +20,8 @@ export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
   const [purchasePriceText, setPurchasePriceText] = useState("");
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  // Bottles arrive through the placement picker; confirming without them answers 409.
+  const hasNoBottles = wine.placements.length === 0;
 
   async function confirmWine(event: FormEvent) {
     event.preventDefault();
@@ -39,8 +42,9 @@ export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
   return (
     <form onSubmit={(event) => void confirmWine(event)} className="grid gap-5">
       <IdentityFields values={identityValues} onChange={setIdentityValues} />
-      <fieldset className="card grid gap-3 md:grid-cols-3">
+      <fieldset className="card grid gap-3 md:grid-cols-2">
         <legend className="eyebrow px-1">Im Keller</legend>
+        <PlacementSummary wine={wine} changeHref={`/wines/${wine.id}/lagerort`} />
         <TextField
           label="Kaufpreis pro Flasche"
           value={purchasePriceText}
@@ -49,7 +53,7 @@ export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
         />
       </fieldset>
       {errorCode && <ErrorNotice errorCode={errorCode} />}
-      <button type="submit" className="button-primary" disabled={isSaving}>
+      <button type="submit" className="button-primary" disabled={isSaving || hasNoBottles}>
         In den Keller legen
       </button>
     </form>

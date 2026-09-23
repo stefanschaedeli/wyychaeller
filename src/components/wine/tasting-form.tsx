@@ -5,28 +5,68 @@ import { ErrorNotice } from "@/components/shared/error-notice";
 import { TextField } from "@/components/shared/text-field";
 import { apiClient } from "@/lib/api-client";
 import { toNullableText } from "@/lib/form-values";
+import { formatBottleCount } from "@/lib/german-labels";
 import { getTodayAsIsoDate } from "@/lib/today-iso-date";
 import { toErrorCode } from "@/lib/use-api-resource";
+import type { BottlePlacementResponse } from "@/shared/api-contract";
 import { StarRatingInput } from "./star-rating-input";
 
 export interface TastingFormProps {
   wineId: number;
+  placements: BottlePlacementResponse[];
   onRecorded: () => void;
   onCancel: () => void;
 }
 
-export function TastingForm({ wineId, onRecorded, onCancel }: TastingFormProps) {
+/** Only a wine stored in several places needs the question; one place answers it itself. */
+function PlacementChoice({
+  placements,
+  selectedPlacementId,
+  onSelect,
+}: {
+  placements: BottlePlacementResponse[];
+  selectedPlacementId: number | null;
+  onSelect: (placementId: number) => void;
+}) {
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="field-label">Aus welchem Lagerort?</legend>
+      {placements.map((placement) => (
+        <label key={placement.id} className="flex min-h-11 items-center gap-2">
+          <input
+            type="radio"
+            name="placement"
+            value={placement.id}
+            checked={selectedPlacementId === placement.id}
+            onChange={() => onSelect(placement.id)}
+          />
+          <span>
+            {placement.description} · {formatBottleCount(placement.bottleCount)}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
+
+export function TastingForm({ wineId, placements, onRecorded, onCancel }: TastingFormProps) {
   const noteId = useId();
   const [starRating, setStarRating] = useState<number | null>(null);
   const [tastingNote, setTastingNote] = useState("");
   const [occasionOrDish, setOccasionOrDish] = useState("");
+  const [placementId, setPlacementId] = useState<number | null>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  const hasPlacementChoice = placements.length > 1;
 
   async function recordTasting(event: FormEvent) {
     event.preventDefault();
+    if (hasPlacementChoice && placementId === null) {
+      setErrorCode("invalidInput");
+      return;
+    }
     try {
       await apiClient.recordTasting(wineId, {
-        placementId: null,
+        placementId: hasPlacementChoice ? placementId : null,
         tastedOn: getTodayAsIsoDate(new Date()),
         starRating,
         tastingNote: toNullableText(tastingNote),
@@ -41,6 +81,13 @@ export function TastingForm({ wineId, onRecorded, onCancel }: TastingFormProps) 
   return (
     <form onSubmit={(event) => void recordTasting(event)} className="card grid gap-4">
       <p className="eyebrow">Flasche getrunken</p>
+      {hasPlacementChoice && (
+        <PlacementChoice
+          placements={placements}
+          selectedPlacementId={placementId}
+          onSelect={setPlacementId}
+        />
+      )}
       <StarRatingInput value={starRating} onChange={setStarRating} />
       <div>
         <label htmlFor={noteId} className="field-label">

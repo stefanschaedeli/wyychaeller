@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { CaptureButton } from "@/components/capture/capture-button";
 import { PageHeader } from "@/components/layout/page-header";
@@ -10,8 +11,10 @@ import { apiClient } from "@/lib/api-client";
 import { ANALYSIS_POLL_INTERVAL_MILLISECONDS, useApiResource } from "@/lib/use-api-resource";
 import { usePhotoUpload } from "@/lib/use-photo-upload";
 import { subscribeToWineUploaded } from "@/lib/wine-upload-events";
+import type { WineResponse } from "@/shared/api-contract";
 
 export default function CapturePage() {
+  const router = useRouter();
   const loadWines = useCallback(() => apiClient.listWines({ includeEmpty: true }), []);
   // Polling stops once no wine is pending or analyzing; uploading a new photo (from this
   // page's own button or from the navigation button on any page) calls reload() below,
@@ -20,7 +23,16 @@ export default function CapturePage() {
     pollIntervalMilliseconds: ANALYSIS_POLL_INTERVAL_MILLISECONDS,
     shouldPoll: hasRunningAnalysis,
   });
-  const photoUpload = usePhotoUpload(wineList.reload);
+  const { reload } = wineList;
+  // The picker comes first: the wine needs bottles before it can be confirmed.
+  const goToPlacementPicker = useCallback(
+    (wine: WineResponse) => {
+      reload();
+      router.push(`/wines/${wine.id}/lagerort`);
+    },
+    [reload, router],
+  );
+  const photoUpload = usePhotoUpload(goToPlacementPicker);
 
   useEffect(() => subscribeToWineUploaded(wineList.reload), [wineList.reload]);
 

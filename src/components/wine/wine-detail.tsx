@@ -8,6 +8,7 @@ import { WinePhoto } from "@/components/shared/wine-photo";
 import { apiClient } from "@/lib/api-client";
 import {
   formatBottleCount,
+  formatPlacementList,
   formatWineOrigin,
   formatWineTitle,
   WINE_TYPE_LABELS,
@@ -36,6 +37,7 @@ function WineFacts({ wine }: { wine: WineResponse }) {
     formatWineOrigin(wine),
     wine.wineType ? WINE_TYPE_LABELS[wine.wineType] : null,
     formatBottleCount(wine.bottleCount),
+    wine.placements.length > 0 ? formatPlacementList(wine.placements) : null,
   ].filter(Boolean);
   return <p className="eyebrow">{facts.join(" · ")}</p>;
 }
@@ -78,6 +80,7 @@ export function WineDetail({ wine, tastings, currency, onChanged, onDeleted }: W
       {openPanel === "tasting" && (
         <TastingForm
           wineId={wine.id}
+          placements={wine.placements}
           onRecorded={closePanelAndReload}
           onCancel={() => setOpenPanel("none")}
         />
