@@ -2,6 +2,16 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.4.0 — 2026-09-23
+
+- Storage locations: Settings → «Lagerorte» manages where bottles live — a simple location (just a name, e.g. «Regal 1») or a grid («Raster») with N rows («Reihe 1…N») and M slots per row, labelled either numbered («Platz 1…M») or as sections («links / rechts» or «links / Mitte / rechts»). A slot holds any number of bottles of any number of wines.
+- Right after a label photo, «Wo liegen die Flaschen?» lets you tap a location and tap a slot once per bottle (or set the count directly), use «Anderer Ort» for free text, or «Später festlegen» to leave the position open. The confirm screen («Stimmt das so?»), «Bearbeiten» and the duplicate merge («Bestand erhöhen») all show the placements with a link to change them.
+- The bottle count shown for a wine is now the sum of its placements. «Flasche getrunken» asks which position the bottle came from when a wine has bottles in more than one place.
+- «Mehr → Lagerorte» shows every location with its wines and grid occupancy, plus a «Freitext und offen» card for bottles without a configured location.
+- Deleting or shrinking a location never loses bottles: affected placements become free-text placements such as «Weinschrank, Reihe 2, links».
+- Automatic migration on first start: each wine's previous free-text «Lagerort» becomes one free-text placement carrying the wine's bottle count. No manual step; existing installations keep working. Wines that already had 0 bottles lose their old location text, since there is no bottle left to attach a placement to.
+- New API: `GET/POST /api/storage-locations`, `PUT/DELETE /api/storage-locations/{id}`, `GET /api/storage-overview`, `PUT /api/wines/{id}/placements`; the confirmation and edit requests no longer carry `bottleCount`/`storageLocation`; `POST /api/wines/{id}/merge` takes no body; tastings accept `placementId`.
+
 ## 1.3.2 — 2026-09-22
 
 - The repository is public under the MIT license (`LICENSE`).

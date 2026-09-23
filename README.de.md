@@ -26,6 +26,7 @@ Eine kleine, selbst gehostete Web-App, um die Weine im eigenen Keller zu erfasse
 - Eine KI mit Websuche klassifiziert den Wein, bewertet ihn, bestimmt das Trinkfenster und schlägt passendes Essen vor.
 - Alle KI-Ergebnisse liegen dauerhaft lokal: Ansehen, Suchen und Filtern kosten nichts und brauchen kein Internet.
 - Die App zeigt, welche Weine bald getrunken werden sollten, und empfiehlt zu einem Gericht die passende Flasche aus dem Keller.
+- Lagerorte halten fest, wo die Flaschen genau liegen: ein einfacher, benannter Ort oder ein Raster mit Reihen und Plätzen. Gleich nach dem Etikett-Foto wird die Position pro Flasche angetippt, und «Mehr → Lagerorte» zeigt jeden Ort mit seinen Weinen und der Belegung.
 - Läuft als ein einziger Docker-Container, lokal in Docker Desktop zum Testen und dauerhaft auf einem Synology NAS.
 - **Wichtig:** Die App hat bewusst kein Login. Sie gehört ins Heimnetz; von unterwegs nur über VPN zugreifen und den Port nie direkt ins Internet freigeben (siehe Abschnitte 7 und 8).
 

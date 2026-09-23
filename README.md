@@ -26,6 +26,7 @@ A small, self-hosted web app for recording the wines in your own cellar. A singl
 - An AI with web search classifies the wine, rates it, determines the drinking window and suggests matching dishes.
 - All AI results are stored locally for good: viewing, searching and filtering cost nothing and need no internet.
 - The app shows which wines should be drunk soon and recommends the right bottle from the cellar for a given dish.
+- Storage locations track exactly where bottles are: a simple named location or a grid with rows and slots. Right after the label photo you tap the position for each bottle, and «Mehr → Lagerorte» shows every location with its wines and how full it is.
 - Runs as a single Docker container anywhere. This guide describes Docker Desktop for testing and a Synology NAS for permanent use, which is the author's setup.
 - **Important:** The app deliberately has no login. It belongs on your home network; reach it from outside only through a VPN and never expose its port directly to the internet (see sections 7 and 8).
 
