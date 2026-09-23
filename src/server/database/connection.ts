@@ -5,9 +5,10 @@ import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import * as schema from "./schema";
 
 export type WineCellarDatabase = BetterSQLite3Database<typeof schema>;
+export type WineCellarTransaction = Parameters<Parameters<WineCellarDatabase["transaction"]>[0]>[0];
 
 export const IN_MEMORY_DATABASE = ":memory:";
-const MIGRATIONS_FOLDER = path.join(process.cwd(), "drizzle");
+export const MIGRATIONS_FOLDER = path.join(process.cwd(), "drizzle");
 
 export function openDatabase(databaseFilePath: string): WineCellarDatabase {
   const sqliteClient = new Database(databaseFilePath);

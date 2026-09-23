@@ -1,4 +1,4 @@
-import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type {
   AnalysisErrorCode,
   AnalysisStatus,
@@ -6,6 +6,7 @@ import type {
   ResearchConfidence,
   WineType,
 } from "@/domain/wine-types";
+import type { SlotLabelStyle, StorageLocationKind } from "@/domain/storage-location";
 
 export interface StoredDishRecommendation {
   wineId: number;
@@ -64,6 +65,43 @@ export const wines = sqliteTable("wines", {
     .$defaultFn(() => new Date()),
 });
 
+export const storageLocations = sqliteTable("storage_locations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  kind: text("kind").$type<StorageLocationKind>().notNull(),
+  rowCount: integer("row_count"),
+  slotsPerRow: integer("slots_per_row"),
+  slotLabelStyle: text("slot_label_style").$type<SlotLabelStyle>(),
+  sortOrder: integer("sort_order").notNull(),
+  createdAt: timestamp("created_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const bottlePlacements = sqliteTable(
+  "bottle_placements",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    wineId: integer("wine_id")
+      .notNull()
+      .references(() => wines.id, { onDelete: "cascade" }),
+    locationId: integer("location_id").references(() => storageLocations.id, {
+      onDelete: "set null",
+    }),
+    rowIndex: integer("row_index"),
+    slotIndex: integer("slot_index"),
+    freeText: text("free_text"),
+    bottleCount: integer("bottle_count").notNull(),
+  },
+  (table) => [
+    index("bottle_placements_wine_id_idx").on(table.wineId),
+    index("bottle_placements_location_id_idx").on(table.locationId),
+  ],
+);
+
 export const tastings = sqliteTable("tastings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   wineId: integer("wine_id")
@@ -110,3 +148,7 @@ export type WineRecord = typeof wines.$inferSelect;
 export type NewWineRecord = typeof wines.$inferInsert;
 export type TastingRecord = typeof tastings.$inferSelect;
 export type DishRecommendationRecord = typeof dishRecommendations.$inferSelect;
+export type StorageLocationRecord = typeof storageLocations.$inferSelect;
+export type NewStorageLocationRecord = typeof storageLocations.$inferInsert;
+export type BottlePlacementRecord = typeof bottlePlacements.$inferSelect;
+export type NewBottlePlacementRecord = typeof bottlePlacements.$inferInsert;
