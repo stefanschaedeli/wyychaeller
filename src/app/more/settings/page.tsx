@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState, type FormEvent } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorNotice } from "@/components/shared/error-notice";
@@ -76,6 +77,11 @@ export default function SettingsPage() {
         <ErrorNotice errorCode={settings.errorCode} onRetry={settings.reload} />
       )}
       {settings.data && <SettingsForm initialSettings={settings.data} />}
+      <nav aria-label="Weitere Einstellungen" className="mt-6 grid gap-2">
+        <Link href="/more/settings/lagerorte" className="button-ghost">
+          Lagerorte verwalten
+        </Link>
+      </nav>
     </>
   );
 }

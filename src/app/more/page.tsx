@@ -70,6 +70,9 @@ export default function MorePage() {
         <Link href="/more/history" className="button-ghost">
           Verkostungen
         </Link>
+        <Link href="/more/lagerorte" className="button-ghost">
+          Lagerorte
+        </Link>
         <Link href="/more/settings" className="button-ghost">
           Einstellungen
         </Link>
