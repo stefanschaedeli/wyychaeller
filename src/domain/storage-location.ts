@@ -1,4 +1,3 @@
-import { MAXIMUM_GRID_ROWS, MAXIMUM_SLOTS_PER_ROW } from "./constants";
 import { stripDiacritics } from "./text-normalization";
 
 export const STORAGE_LOCATION_KINDS = ["simple", "grid"] as const;
@@ -43,23 +42,6 @@ export function requiredSlotsPerRow(style: SlotLabelStyle): number | null {
   return labels === null ? null : labels.length;
 }
 
-function isValidSimpleShape(shape: StorageLocationShape): boolean {
-  return shape.rowCount === null && shape.slotsPerRow === null && shape.slotLabelStyle === null;
-}
-
-function isValidGridShape(shape: StorageLocationShape): boolean {
-  const { rowCount, slotsPerRow, slotLabelStyle } = shape;
-  if (rowCount === null || slotsPerRow === null || slotLabelStyle === null) return false;
-  if (rowCount < 1 || rowCount > MAXIMUM_GRID_ROWS) return false;
-  if (slotsPerRow < 1 || slotsPerRow > MAXIMUM_SLOTS_PER_ROW) return false;
-  const required = requiredSlotsPerRow(slotLabelStyle);
-  return required === null || slotsPerRow === required;
-}
-
-export function isValidLocationShape(shape: StorageLocationShape): boolean {
-  return shape.kind === "simple" ? isValidSimpleShape(shape) : isValidGridShape(shape);
-}
-
 export function formatRowLabel(rowIndex: number): string {
   return `Reihe ${rowIndex}`;
 }
@@ -98,6 +80,10 @@ function normalizeFreeText(text: string): string {
   return stripDiacritics(text).toLowerCase().trim();
 }
 
+/**
+ * Free-text keys are case- and diacritic-insensitive (via normalizeFreeText), so
+ * "Regal 1" and "regal 1" merge into one placement under whichever spelling was seen first.
+ */
 export function buildPlacementKey(position: PlacementPosition): string {
   if (position.locationId !== null) {
     if (position.rowIndex !== null && position.slotIndex !== null) {

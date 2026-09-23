@@ -47,6 +47,9 @@ export function PlacementPicker({ wine, overview }: PlacementPickerProps) {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const wineHref = `/wines/${wine.id}`;
+  // The limit is checked client-side so "Fertig" never sends a draft the server would
+  // reject wholesale; it takes priority over a stale save error once it applies.
+  const displayedErrorCode = state.hasTooManyPlacements ? "tooManyPlacements" : errorCode;
 
   const selectedLocation =
     state.target?.kind === "location"
@@ -94,12 +97,12 @@ export function PlacementPicker({ wine, overview }: PlacementPickerProps) {
         onRemove={(placement) => state.setCountAtPosition(placement, NO_BOTTLES)}
       />
       <footer className="grid gap-3 border-t border-line pt-4">
-        {errorCode && <ErrorNotice errorCode={errorCode} shouldTakeFocus />}
+        {displayedErrorCode && <ErrorNotice errorCode={displayedErrorCode} shouldTakeFocus />}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             className="button-primary"
-            disabled={isSaving}
+            disabled={isSaving || state.hasTooManyPlacements}
             onClick={() => void savePlacements()}
           >
             Fertig

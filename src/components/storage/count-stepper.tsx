@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MAXIMUM_BOTTLE_COUNT } from "@/domain/constants";
 import { commitCountText, parseCountWhileTyping } from "@/lib/count-input";
 
 const NO_BOTTLES = 0;
@@ -61,7 +62,7 @@ export function CountStepper({ value, onChange, label }: CountStepperProps) {
           type="button"
           aria-label="Eine Flasche mehr"
           className="button-ghost min-h-11 min-w-11"
-          onClick={() => onChange(value + 1)}
+          onClick={() => onChange(Math.min(MAXIMUM_BOTTLE_COUNT, value + 1))}
         >
           +
         </button>

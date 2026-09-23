@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MAXIMUM_BOTTLE_COUNT } from "@/domain/constants";
 import { commitCountText, parseCountWhileTyping } from "./count-input";
 
 describe("parseCountWhileTyping", () => {
@@ -21,6 +22,10 @@ describe("parseCountWhileTyping", () => {
   it("accepts zero, which empties the position", () => {
     expect(parseCountWhileTyping("0")).toBe(0);
   });
+
+  it("clamps a typed count above the maximum", () => {
+    expect(parseCountWhileTyping(String(MAXIMUM_BOTTLE_COUNT + 1))).toBe(MAXIMUM_BOTTLE_COUNT);
+  });
 });
 
 describe("commitCountText", () => {
@@ -36,5 +41,9 @@ describe("commitCountText", () => {
   it("falls back to the committed value when the text is unusable", () => {
     expect(commitCountText("abc", 9)).toBe(9);
     expect(commitCountText("-2", 9)).toBe(9);
+  });
+
+  it("clamps a committed count above the maximum", () => {
+    expect(commitCountText(String(MAXIMUM_BOTTLE_COUNT + 1), 9)).toBe(MAXIMUM_BOTTLE_COUNT);
   });
 });

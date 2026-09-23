@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { MAXIMUM_PLACEMENTS_PER_WINE } from "@/domain/constants";
 import type { BottlePlacement, PlacementPosition } from "@/domain/storage-location";
-import { addBottle, countAt, removeBottle, removePosition, setCount } from "./placement-draft";
+import { addBottle, canAddPosition, countAt, setCount } from "./placement-draft";
 
 const LOCATION_A: PlacementPosition = {
   locationId: 1,
@@ -50,23 +51,6 @@ describe("addBottle", () => {
   });
 });
 
-describe("removeBottle", () => {
-  it("decrements the count for an existing position", () => {
-    const draft = removeBottle(buildDraft({ bottleCount: 2 }), LOCATION_A);
-    expect(countAt(draft, LOCATION_A)).toBe(1);
-  });
-
-  it("removes the entry once the count reaches zero", () => {
-    const draft = removeBottle(buildDraft({ bottleCount: 1 }), LOCATION_A);
-    expect(draft).toEqual([]);
-  });
-
-  it("does nothing when no entry matches the position", () => {
-    const original = buildDraft();
-    expect(removeBottle(original, LOCATION_B)).toEqual(original);
-  });
-});
-
 describe("setCount", () => {
   it("sets an explicit bottle count for a position", () => {
     const draft = setCount(buildDraft(), LOCATION_A, 5);
@@ -84,15 +68,34 @@ describe("setCount", () => {
   });
 });
 
-describe("removePosition", () => {
-  it("removes the entry at the given position regardless of count", () => {
-    const draft = removePosition(buildDraft({ bottleCount: 9 }), LOCATION_A);
-    expect(draft).toEqual([]);
+function buildFullDraft(): BottlePlacement[] {
+  return Array.from({ length: MAXIMUM_PLACEMENTS_PER_WINE }, (_unused, index) => ({
+    locationId: index + 1,
+    rowIndex: null,
+    slotIndex: null,
+    freeText: null,
+    bottleCount: 1,
+  }));
+}
+
+describe("canAddPosition", () => {
+  it("allows a new position while under the maximum", () => {
+    expect(canAddPosition(buildDraft(), LOCATION_B)).toBe(true);
   });
 
-  it("leaves other positions untouched", () => {
-    const draft = [...buildDraft(), { ...LOCATION_B, bottleCount: 1 }];
-    const updated = removePosition(draft, LOCATION_A);
-    expect(updated).toEqual([{ ...LOCATION_B, bottleCount: 1 }]);
+  it("allows adding to a position the draft already has, even at the maximum", () => {
+    const fullDraft = buildFullDraft();
+    expect(canAddPosition(fullDraft, fullDraft[0])).toBe(true);
+  });
+
+  it("rejects a new, distinct position once the draft is at the maximum", () => {
+    const fullDraft = buildFullDraft();
+    const newPosition: PlacementPosition = {
+      locationId: MAXIMUM_PLACEMENTS_PER_WINE + 1,
+      rowIndex: null,
+      slotIndex: null,
+      freeText: null,
+    };
+    expect(canAddPosition(fullDraft, newPosition)).toBe(false);
   });
 });

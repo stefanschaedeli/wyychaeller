@@ -1,3 +1,4 @@
+import { MAXIMUM_PLACEMENTS_PER_WINE } from "@/domain/constants";
 import {
   buildPlacementKey,
   type BottlePlacement,
@@ -36,18 +37,12 @@ export function addBottle(
   return setCount(draft, position, countAt(draft, position) + 1);
 }
 
-export function removeBottle(
-  draft: BottlePlacement[],
-  position: PlacementPosition,
-): BottlePlacement[] {
-  const currentCount = countAt(draft, position);
-  if (currentCount === 0) return draft;
-  return setCount(draft, position, currentCount - 1);
-}
-
-export function removePosition(
-  draft: BottlePlacement[],
-  position: PlacementPosition,
-): BottlePlacement[] {
-  return setCount(draft, position, 0);
+/**
+ * Whether a bottle can be added at `position`: always true for a position the draft
+ * already holds (it only grows that entry's count), false for a new, distinct position
+ * once the draft already has the maximum number of placements.
+ */
+export function canAddPosition(draft: BottlePlacement[], position: PlacementPosition): boolean {
+  if (findIndexAt(draft, position) !== -1) return true;
+  return draft.length < MAXIMUM_PLACEMENTS_PER_WINE;
 }

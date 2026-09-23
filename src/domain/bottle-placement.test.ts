@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   findPlacementsOutsideShape,
-  groupPlacementsBySlot,
   isConsistentPosition,
   isPositionWithinLocation,
   mergePlacements,
@@ -160,21 +159,5 @@ describe("toFreeTextPlacement", () => {
       freeText: "Weinschrank, Reihe 2, links",
       bottleCount: 4,
     });
-  });
-});
-
-describe("groupPlacementsBySlot", () => {
-  it("groups placements by their key, summing bottle counts", () => {
-    const first = buildPlacement({ bottleCount: 2 });
-    const second = buildPlacement({ bottleCount: 3 });
-    const other = buildPlacement({
-      locationId: 2,
-      rowIndex: null,
-      slotIndex: null,
-      bottleCount: 1,
-    });
-    const grouped = groupPlacementsBySlot([first, second, other]);
-    expect(grouped.get("location:1:2:1")).toEqual({ bottleCount: 5, placements: [first, second] });
-    expect(grouped.get("location:2")).toEqual({ bottleCount: 1, placements: [other] });
   });
 });

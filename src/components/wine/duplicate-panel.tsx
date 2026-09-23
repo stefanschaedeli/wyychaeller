@@ -18,6 +18,8 @@ export interface DuplicatePanelProps {
 
 export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProps) {
   const [errorCode, setErrorCode] = useState<string | null>(null);
+  // Bottles arrive through the placement picker; merging without them answers 409.
+  const hasNoBottles = wine.placements.length === 0;
 
   async function mergeIntoExistingWine() {
     try {
@@ -43,6 +45,7 @@ export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProp
         <button
           type="button"
           className="button-primary"
+          disabled={hasNoBottles}
           onClick={() => void mergeIntoExistingWine()}
         >
           Bestand erhöhen

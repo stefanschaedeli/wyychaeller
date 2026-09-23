@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MAXIMUM_PLACEMENTS_PER_WINE } from "@/domain/constants";
 import { ANALYSIS_ERROR_CODES } from "@/domain/wine-types";
 import {
   describeError,
@@ -46,6 +47,7 @@ const API_ERROR_CODES = [
     "placementRequired",
     "noBottles",
     "tooManyLocations",
+    "tooManyPlacements",
     ...ANALYSIS_ERROR_CODES,
   ]),
 ].filter((code) => code !== "unexpected");
@@ -84,6 +86,12 @@ describe("german labels", () => {
     );
     expect(describeError("somethingNew")).toBe(
       "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    );
+  });
+
+  it("builds the too-many-placements message from the shared constant", () => {
+    expect(describeError("tooManyPlacements")).toBe(
+      `Ein Wein kann höchstens ${MAXIMUM_PLACEMENTS_PER_WINE} Lagerplätze haben.`,
     );
   });
 

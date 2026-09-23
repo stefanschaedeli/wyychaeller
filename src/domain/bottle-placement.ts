@@ -52,11 +52,15 @@ export function isPositionWithinLocation(
   return isRowWithinRange && isSlotWithinRange;
 }
 
-/** Placements that no longer fit after a location shape changes (e.g. grid shrunk to simple). */
-export function findPlacementsOutsideShape(
-  placements: BottlePlacement[],
+/**
+ * Placements that no longer fit after a location shape changes (e.g. grid shrunk to simple).
+ * Generic over the placement type so callers holding a richer record (e.g. a database row)
+ * get that same type back, not just the position fields.
+ */
+export function findPlacementsOutsideShape<Placement extends PlacementPosition>(
+  placements: Placement[],
   newShape: StorageLocationShape,
-): BottlePlacement[] {
+): Placement[] {
   return placements.filter((placement) => !isPositionWithinLocation(placement, newShape));
 }
 
@@ -71,26 +75,4 @@ export function toFreeTextPlacement(
     freeText: describePlacement(placement, oldLocation),
     bottleCount: placement.bottleCount,
   };
-}
-
-export interface PlacementSlotGroup {
-  bottleCount: number;
-  placements: BottlePlacement[];
-}
-
-export function groupPlacementsBySlot(
-  placements: BottlePlacement[],
-): Map<string, PlacementSlotGroup> {
-  const groups = new Map<string, PlacementSlotGroup>();
-  for (const placement of placements) {
-    const key = buildPlacementKey(placement);
-    const group = groups.get(key);
-    if (group === undefined) {
-      groups.set(key, { bottleCount: placement.bottleCount, placements: [placement] });
-    } else {
-      group.bottleCount += placement.bottleCount;
-      group.placements.push(placement);
-    }
-  }
-  return groups;
 }

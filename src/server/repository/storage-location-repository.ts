@@ -1,5 +1,5 @@
 import { asc, eq, max } from "drizzle-orm";
-import { isPositionWithinLocation, toFreeTextPlacement } from "@/domain/bottle-placement";
+import { findPlacementsOutsideShape, toFreeTextPlacement } from "@/domain/bottle-placement";
 import type { BottlePlacement, StorageLocationShape } from "@/domain/storage-location";
 import type { WineCellarDatabase, WineCellarTransaction } from "../database/connection";
 import {
@@ -42,22 +42,22 @@ function requireLocation(
 }
 
 /**
- * Converts the placements at a location that match `shouldConvert` into free text, then
- * re-merges every affected wine's placements so a conversion never creates a duplicate
- * key (e.g. a location named the same as an existing free-text placement).
+ * Converts the placements at a location that `selectToConvert` picks out into free text,
+ * then re-merges every affected wine's placements so a conversion never creates a
+ * duplicate key (e.g. a location named the same as an existing free-text placement).
  */
 function convertPlacementsToFreeText(
   transaction: WineCellarTransaction,
   locationId: number,
   oldShape: StorageLocationShape,
-  shouldConvert: (placement: BottlePlacementRecord) => boolean,
+  selectToConvert: (placements: BottlePlacementRecord[]) => BottlePlacementRecord[],
 ): number {
   const placementsAtLocation = transaction
     .select()
     .from(bottlePlacements)
     .where(eq(bottlePlacements.locationId, locationId))
     .all();
-  const toConvert = placementsAtLocation.filter(shouldConvert);
+  const toConvert = selectToConvert(placementsAtLocation);
 
   const affectedWineIds = new Set(toConvert.map((placement) => placement.wineId));
   for (const placement of toConvert) {
@@ -148,7 +148,7 @@ export class StorageLocationRepository {
         transaction,
         locationId,
         oldShape,
-        (placement) => !isPositionWithinLocation(placement, shape),
+        (placements) => findPlacementsOutsideShape(placements, shape),
       );
       const location = transaction
         .update(storageLocations)
@@ -169,7 +169,7 @@ export class StorageLocationRepository {
         transaction,
         locationId,
         oldShape,
-        () => true,
+        (placements) => placements,
       );
       transaction.delete(storageLocations).where(eq(storageLocations.id, locationId)).run();
       return convertedPlacementCount;

@@ -4,7 +4,6 @@ import {
   describePlacement,
   formatRowLabel,
   formatSlotLabel,
-  isValidLocationShape,
   NAMED_SLOT_LABELS,
   requiredSlotsPerRow,
   UNPLACED_LABEL,
@@ -44,50 +43,6 @@ describe("requiredSlotsPerRow", () => {
 
   it("returns null for numbered, since any slot count is allowed", () => {
     expect(requiredSlotsPerRow("numbered")).toBeNull();
-  });
-});
-
-describe("isValidLocationShape", () => {
-  it("accepts a simple shape with null grid fields", () => {
-    expect(isValidLocationShape(buildSimpleShape())).toBe(true);
-  });
-
-  it("rejects a simple shape carrying grid fields", () => {
-    expect(isValidLocationShape(buildSimpleShape({ rowCount: 1 }))).toBe(false);
-  });
-
-  it("accepts a grid shape within the maximum rows and slots", () => {
-    expect(isValidLocationShape(buildGridShape())).toBe(true);
-  });
-
-  it("rejects a grid shape with zero or negative rows", () => {
-    expect(isValidLocationShape(buildGridShape({ rowCount: 0 }))).toBe(false);
-  });
-
-  it("rejects a grid shape exceeding the maximum rows", () => {
-    expect(isValidLocationShape(buildGridShape({ rowCount: 31 }))).toBe(false);
-  });
-
-  it("rejects a grid shape exceeding the maximum slots per row", () => {
-    expect(
-      isValidLocationShape(
-        buildGridShape({ slotsPerRow: 31, slotLabelStyle: "numbered", rowCount: 1 }),
-      ),
-    ).toBe(false);
-  });
-
-  it("rejects a grid shape whose slotsPerRow does not match a named style", () => {
-    expect(isValidLocationShape(buildGridShape({ slotsPerRow: 3 }))).toBe(false);
-  });
-
-  it("accepts a numbered grid shape with any slot count within the maximum", () => {
-    expect(
-      isValidLocationShape(buildGridShape({ slotLabelStyle: "numbered", slotsPerRow: 7 })),
-    ).toBe(true);
-  });
-
-  it("rejects a grid shape missing a required grid field", () => {
-    expect(isValidLocationShape(buildGridShape({ slotLabelStyle: null }))).toBe(false);
   });
 });
 

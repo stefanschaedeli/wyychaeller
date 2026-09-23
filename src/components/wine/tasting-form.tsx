@@ -64,6 +64,7 @@ export function TastingForm({ wineId, placements, onRecorded, onCancel }: Tastin
 
   async function recordTasting(event: FormEvent) {
     event.preventDefault();
+    setErrorCode(null);
     if (hasPlacementChoice && placementId === null) {
       setErrorCode("placementRequired");
       return;
@@ -107,7 +108,7 @@ export function TastingForm({ wineId, placements, onRecorded, onCancel }: Tastin
         />
       </div>
       <TextField label="Anlass oder Essen" value={occasionOrDish} onChange={setOccasionOrDish} />
-      {errorCode && <ErrorNotice errorCode={errorCode} id={errorNoticeId} />}
+      {errorCode && <ErrorNotice errorCode={errorCode} id={errorNoticeId} shouldTakeFocus />}
       <div className="flex gap-2">
         <button type="submit" className="button-primary">
           Speichern

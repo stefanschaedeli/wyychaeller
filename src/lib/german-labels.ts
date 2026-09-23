@@ -1,3 +1,4 @@
+import { MAXIMUM_PLACEMENTS_PER_WINE } from "@/domain/constants";
 import type {
   SlotLabelStyle,
   StorageLocationKind,
@@ -67,6 +68,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   placementRequired: "Bitte wähle, aus welchem Lagerort die Flasche stammt.",
   noBottles: "Bitte gib mindestens eine Flasche an.",
   tooManyLocations: "Es sind bereits zu viele Lagerorte angelegt.",
+  tooManyPlacements: `Ein Wein kann höchstens ${MAXIMUM_PLACEMENTS_PER_WINE} Lagerplätze haben.`,
 };
 
 export function describeError(errorCode: string): string {
