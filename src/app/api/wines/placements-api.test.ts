@@ -94,6 +94,20 @@ describe("wine placements", () => {
       ["Kiste", 2],
     ]);
   });
+
+  // Emptying a cellared wine is deliberate: the last bottle can be given away rather than
+  // drunk, and the cellar list keeps such wines reachable through its "include empty" filter.
+  it("empties a cellared wine when the placement list is empty", async () => {
+    const wineId = await uploadAndConfirm(testContainer);
+
+    const response = await putPlacements(wineId, []);
+
+    expect(response.status).toBe(200);
+    const { wine } = await response.json();
+    expect(wine.bottleCount).toBe(0);
+    expect(wine.placements).toEqual([]);
+    expect(wine.analysisStatus).toBe("complete");
+  });
 });
 
 describe("tasting with placements", () => {

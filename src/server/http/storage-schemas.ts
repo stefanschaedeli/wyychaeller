@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BottlePlacementRequest, StorageLocationRequest } from "@/shared/api-contract";
 import { isConsistentPosition } from "@/domain/bottle-placement";
 import {
   MAXIMUM_BOTTLE_COUNT,
@@ -51,9 +52,28 @@ export const BottlePlacementSchema = z
   .strict()
   .refine(isConsistentPosition, { message: "Placement position is inconsistent" });
 
+// An empty list is a valid request: it means "this wine has no bottles left anywhere",
+// which clears every placement and sets the wine's bottle count to zero.
 export const PlacementsSchema = z
   .object({ placements: z.array(BottlePlacementSchema).max(MAXIMUM_PLACEMENTS_PER_WINE) })
   .strict();
+
+/** True only when both types are identical, so drift in either direction fails the typecheck. */
+type Equals<Left, Right> =
+  (<Probe>() => Probe extends Left ? 1 : 2) extends <Probe>() => Probe extends Right ? 1 : 2
+    ? true
+    : false;
+
+// These schemas and the shared API contract describe the same request shapes; the two
+// assertions below stop them drifting apart unnoticed.
+export const isLocationSchemaInContractShape: Equals<
+  z.infer<typeof StorageLocationSchema>,
+  StorageLocationRequest
+> = true;
+export const isPlacementSchemaInContractShape: Equals<
+  z.infer<typeof BottlePlacementSchema>,
+  BottlePlacementRequest
+> = true;
 
 export type StorageLocationRequestBody = z.infer<typeof StorageLocationSchema>;
 
