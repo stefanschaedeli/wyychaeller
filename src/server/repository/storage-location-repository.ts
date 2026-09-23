@@ -1,6 +1,6 @@
 import { asc, eq, max } from "drizzle-orm";
 import { isPositionWithinLocation, toFreeTextPlacement } from "@/domain/bottle-placement";
-import type { StorageLocationShape } from "@/domain/storage-location";
+import type { BottlePlacement, StorageLocationShape } from "@/domain/storage-location";
 import type { WineCellarDatabase, WineCellarTransaction } from "../database/connection";
 import {
   bottlePlacements,
@@ -9,7 +9,7 @@ import {
   type StorageLocationRecord,
 } from "../database/schema";
 import { RecordNotFoundError } from "./errors";
-import { refreshCachedBottleCount } from "./placement-repository";
+import { writeMergedPlacements } from "./placement-repository";
 
 export type LocationWithBottleCount = StorageLocationRecord & { bottleCount: number };
 
@@ -41,24 +41,26 @@ function requireLocation(
   return location;
 }
 
-/** Converts placements that no longer fit into free text, in the given transaction. */
-function convertOutOfShapePlacements(
+/**
+ * Converts the placements at a location that match `shouldConvert` into free text, then
+ * re-merges every affected wine's placements so a conversion never creates a duplicate
+ * key (e.g. a location named the same as an existing free-text placement).
+ */
+function convertPlacementsToFreeText(
   transaction: WineCellarTransaction,
   locationId: number,
   oldShape: StorageLocationShape,
-  newShape: StorageLocationShape,
+  shouldConvert: (placement: BottlePlacementRecord) => boolean,
 ): number {
-  const placements = transaction
+  const placementsAtLocation = transaction
     .select()
     .from(bottlePlacements)
     .where(eq(bottlePlacements.locationId, locationId))
     .all();
-  const outOfShape: BottlePlacementRecord[] = placements.filter(
-    (placement) => !isPositionWithinLocation(placement, newShape),
-  );
+  const toConvert = placementsAtLocation.filter(shouldConvert);
 
-  const affectedWineIds = new Set<number>();
-  for (const placement of outOfShape) {
+  const affectedWineIds = new Set(toConvert.map((placement) => placement.wineId));
+  for (const placement of toConvert) {
     const freeTextPlacement = toFreeTextPlacement(placement, oldShape);
     transaction
       .update(bottlePlacements)
@@ -70,39 +72,17 @@ function convertOutOfShapePlacements(
       })
       .where(eq(bottlePlacements.id, placement.id))
       .run();
-    affectedWineIds.add(placement.wineId);
   }
-  for (const wineId of affectedWineIds) refreshCachedBottleCount(transaction, wineId);
-  return outOfShape.length;
-}
 
-/** Converts every placement at a location to free text, in the given transaction. */
-function convertAllPlacements(
-  transaction: WineCellarTransaction,
-  locationId: number,
-  oldShape: StorageLocationShape,
-): number {
-  const placements = transaction
-    .select()
-    .from(bottlePlacements)
-    .where(eq(bottlePlacements.locationId, locationId))
-    .all();
-
-  for (const placement of placements) {
-    const freeTextPlacement = toFreeTextPlacement(placement, oldShape);
-    transaction
-      .update(bottlePlacements)
-      .set({
-        locationId: null,
-        rowIndex: null,
-        slotIndex: null,
-        freeText: freeTextPlacement.freeText,
-      })
-      .where(eq(bottlePlacements.id, placement.id))
-      .run();
-    refreshCachedBottleCount(transaction, placement.wineId);
+  for (const wineId of affectedWineIds) {
+    const winePlacements: BottlePlacement[] = transaction
+      .select()
+      .from(bottlePlacements)
+      .where(eq(bottlePlacements.wineId, wineId))
+      .all();
+    writeMergedPlacements(transaction, wineId, winePlacements);
   }
-  return placements.length;
+  return toConvert.length;
 }
 
 export class StorageLocationRepository {
@@ -164,11 +144,11 @@ export class StorageLocationRepository {
     return this.database.transaction((transaction) => {
       const existingLocation = requireLocation(transaction, locationId);
       const oldShape = toLocationShape(existingLocation);
-      const convertedPlacementCount = convertOutOfShapePlacements(
+      const convertedPlacementCount = convertPlacementsToFreeText(
         transaction,
         locationId,
         oldShape,
-        shape,
+        (placement) => !isPositionWithinLocation(placement, shape),
       );
       const location = transaction
         .update(storageLocations)
@@ -185,7 +165,12 @@ export class StorageLocationRepository {
     return this.database.transaction((transaction) => {
       const existingLocation = requireLocation(transaction, locationId);
       const oldShape = toLocationShape(existingLocation);
-      const convertedPlacementCount = convertAllPlacements(transaction, locationId, oldShape);
+      const convertedPlacementCount = convertPlacementsToFreeText(
+        transaction,
+        locationId,
+        oldShape,
+        () => true,
+      );
       transaction.delete(storageLocations).where(eq(storageLocations.id, locationId)).run();
       return convertedPlacementCount;
     });

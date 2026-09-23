@@ -135,4 +135,38 @@ describe("StorageLocationRepository", () => {
   it("throws RecordNotFoundError when deleting an unknown location", () => {
     expect(() => storageLocationRepository.deleteLocation(999)).toThrow(RecordNotFoundError);
   });
+
+  it("merges a converted placement into an existing free-text placement with the same name", () => {
+    const location = storageLocationRepository.createLocation({
+      name: "Keller",
+      kind: "simple",
+      rowCount: null,
+      slotsPerRow: null,
+      slotLabelStyle: null,
+    });
+    const wine = wineRepository.createPendingWine("label.jpg");
+    const freeTextPlacement: BottlePlacement = {
+      locationId: null,
+      rowIndex: null,
+      slotIndex: null,
+      freeText: "Keller",
+      bottleCount: 3,
+    };
+    const locationPlacement: BottlePlacement = {
+      locationId: location.id,
+      rowIndex: null,
+      slotIndex: null,
+      freeText: null,
+      bottleCount: 5,
+    };
+    placementRepository.replacePlacements(wine.id, [freeTextPlacement, locationPlacement]);
+
+    const convertedCount = storageLocationRepository.deleteLocation(location.id);
+
+    expect(convertedCount).toBe(1);
+    const winePlacements = placementRepository.listPlacementsForWine(wine.id);
+    expect(winePlacements).toHaveLength(1);
+    expect(winePlacements[0]).toMatchObject({ freeText: "Keller", bottleCount: 8 });
+    expect(wineRepository.findWineById(wine.id)?.bottleCount).toBe(8);
+  });
 });

@@ -98,6 +98,18 @@ function insertPlacements(
     .run();
 }
 
+/** Merges, replaces every placement row for a wine and refreshes its cached bottle count. */
+export function writeMergedPlacements(
+  transaction: WineCellarTransaction,
+  wineId: number,
+  placements: BottlePlacement[],
+): void {
+  const merged = mergePlacements(placements);
+  transaction.delete(bottlePlacements).where(eq(bottlePlacements.wineId, wineId)).run();
+  insertPlacements(transaction, wineId, merged);
+  refreshCachedBottleCount(transaction, wineId);
+}
+
 export class PlacementRepository {
   constructor(private readonly database: WineCellarDatabase) {}
 
@@ -155,10 +167,7 @@ export class PlacementRepository {
       );
       for (const placement of placements) validatePlacement(placement, locationsById);
 
-      const merged = mergePlacements(placements);
-      transaction.delete(bottlePlacements).where(eq(bottlePlacements.wineId, wineId)).run();
-      insertPlacements(transaction, wineId, merged);
-      refreshCachedBottleCount(transaction, wineId);
+      writeMergedPlacements(transaction, wineId, placements);
 
       return this.selectPlacementsInTransaction(transaction, wineId);
     });
@@ -178,10 +187,10 @@ export class PlacementRepository {
         .where(eq(bottlePlacements.wineId, duplicateWineId))
         .all();
 
-      const combined = mergePlacements([...existingPlacements, ...duplicatePlacements]);
-      transaction.delete(bottlePlacements).where(eq(bottlePlacements.wineId, existingWineId)).run();
-      insertPlacements(transaction, existingWineId, combined);
-      refreshCachedBottleCount(transaction, existingWineId);
+      writeMergedPlacements(transaction, existingWineId, [
+        ...existingPlacements,
+        ...duplicatePlacements,
+      ]);
       transaction.delete(wines).where(eq(wines.id, duplicateWineId)).run();
 
       const mergedWine = transaction.select().from(wines).where(eq(wines.id, existingWineId)).get();
