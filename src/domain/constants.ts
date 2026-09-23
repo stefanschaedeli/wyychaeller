@@ -22,3 +22,9 @@ export const MINIMUM_DISH_TEXT_LENGTH = 2;
 /** Ordered from most to least talkative; "silent" switches the activity log off. */
 export const LOG_LEVELS = ["debug", "info", "warn", "error", "silent"] as const;
 export const DEFAULT_LOG_LEVEL = "info";
+
+export const MAXIMUM_STORAGE_LOCATIONS = 50;
+export const MAXIMUM_GRID_ROWS = 30;
+export const MAXIMUM_SLOTS_PER_ROW = 30;
+export const MAXIMUM_LOCATION_NAME_LENGTH = 60;
+export const MAXIMUM_PLACEMENTS_PER_WINE = 50;

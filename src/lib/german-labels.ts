@@ -1,3 +1,8 @@
+import type {
+  SlotLabelStyle,
+  StorageLocationKind,
+  StorageLocationShape,
+} from "@/domain/storage-location";
 import type { AnalysisStatus, DrinkingMaturity, WineType } from "@/domain/wine-types";
 
 export const WINE_TYPE_LABELS: Record<WineType, string> = {
@@ -24,6 +29,17 @@ export const ANALYSIS_STATUS_LABELS: Record<AnalysisStatus, string> = {
   failed: "Analyse fehlgeschlagen",
 };
 
+export const STORAGE_LOCATION_KIND_LABELS: Record<StorageLocationKind, string> = {
+  simple: "Einfach",
+  grid: "Raster",
+};
+
+export const SLOT_LABEL_STYLE_LABELS: Record<SlotLabelStyle, string> = {
+  numbered: "Nummeriert",
+  leftRight: "links / rechts",
+  leftMiddleRight: "links / Mitte / rechts",
+};
+
 const FALLBACK_ERROR_MESSAGE = "Etwas ist schiefgelaufen. Bitte versuche es erneut.";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -47,6 +63,10 @@ const ERROR_MESSAGES: Record<string, string> = {
   notAwaitingConfirmation:
     "Dieser Wein wartet nicht mehr auf eine Bestätigung. Lade die Seite neu.",
   notADuplicate: "Dieser Wein ist kein Duplikat und kann nicht zusammengeführt werden.",
+  invalidPlacement: "Diese Position ist für den gewählten Lagerort ungültig.",
+  placementRequired: "Bitte wähle mindestens einen Lagerort.",
+  noBottles: "Bitte gib mindestens eine Flasche an.",
+  tooManyLocations: "Es sind bereits zu viele Lagerorte angelegt.",
 };
 
 export function describeError(errorCode: string): string {
@@ -80,4 +100,22 @@ export function formatBottleCount(bottleCount: number): string {
 
 export function formatWineCount(wineCount: number): string {
   return wineCount === 1 ? "1 Wein" : `${wineCount} Weinen`;
+}
+
+export function describeLocationShape(shape: StorageLocationShape): string {
+  if (shape.kind === "simple" || shape.rowCount === null || shape.slotsPerRow === null) {
+    return "Einfacher Lagerort";
+  }
+  const styleLabel =
+    shape.slotLabelStyle === null ? "" : ` (${SLOT_LABEL_STYLE_LABELS[shape.slotLabelStyle]})`;
+  return `${shape.rowCount} Reihen × ${shape.slotsPerRow} Plätze${styleLabel}`;
+}
+
+export function formatPlacementList(
+  placements: { description: string; bottleCount: number }[],
+): string {
+  if (placements.length === 1) return placements[0].description;
+  return placements
+    .map((placement) => `${placement.description} (${placement.bottleCount})`)
+    .join(" · ");
 }
