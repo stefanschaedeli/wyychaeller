@@ -30,6 +30,15 @@ function GridBody({
   const selectedPlacements =
     selectedKey === null ? [] : (occupancy.get(selectedKey)?.placements ?? []);
 
+  /** Tapping the open slot again closes its detail panel, matching the cell's aria-pressed. */
+  function toggleSlot(rowIndex: number, slotIndex: number) {
+    setSelectedSlot((current) =>
+      current !== null && current.rowIndex === rowIndex && current.slotIndex === slotIndex
+        ? null
+        : { rowIndex, slotIndex },
+    );
+  }
+
   return (
     <>
       <div className="mt-3">
@@ -37,7 +46,7 @@ function GridBody({
           location={location}
           occupancy={occupancy}
           selectedKey={selectedKey}
-          onSelectSlot={(rowIndex, slotIndex) => setSelectedSlot({ rowIndex, slotIndex })}
+          onSelectSlot={toggleSlot}
         />
       </div>
       {selectedSlot !== null && location.slotLabelStyle !== null && (

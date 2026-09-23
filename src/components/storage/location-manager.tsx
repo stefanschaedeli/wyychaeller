@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { apiClient } from "@/lib/api-client";
+import { formatBottleCount } from "@/lib/german-labels";
 import { useApiResource } from "@/lib/use-api-resource";
 import { LocationForm } from "./location-form";
 import { LocationRow } from "./location-row";
@@ -43,7 +44,9 @@ export function LocationManager() {
       )}
       {mutations.errorCode && <ErrorNotice errorCode={mutations.errorCode} />}
       {mutations.convertedPlacementCount > 0 && (
-        <p role="status">{mutations.convertedPlacementCount} Flaschen als Text übernommen</p>
+        <p role="status">
+          {formatBottleCount(mutations.convertedPlacementCount)} als Text übernommen
+        </p>
       )}
       {hasNoLocations && <EmptyState title="Noch keine Lagerorte" hint={EMPTY_HINT} />}
       <ul>

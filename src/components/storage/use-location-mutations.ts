@@ -48,19 +48,32 @@ async function runMutation(
 export function useLocationMutations(onMutated: () => void): LocationMutations {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const [convertedPlacementCount, setConvertedPlacementCount] = useState(0);
-  const callbacks: MutationCallbacks = { setErrorCode, setConvertedPlacementCount, onMutated };
 
-  const createLocation = (request: StorageLocationRequest) =>
-    runMutation(async () => {
-      await apiClient.createStorageLocation(request);
-      return 0;
-    }, callbacks);
+  // The two setters are stable across renders, so `onMutated` is the only real dependency
+  // below and both callbacks stay stable — safe to use from an effect later.
+  const createLocation = useCallback(
+    (request: StorageLocationRequest) =>
+      runMutation(
+        async () => {
+          await apiClient.createStorageLocation(request);
+          return 0;
+        },
+        { setErrorCode, setConvertedPlacementCount, onMutated },
+      ),
+    [onMutated],
+  );
 
-  const updateLocation = (locationId: number, request: StorageLocationRequest) =>
-    runMutation(async () => {
-      const result = await apiClient.updateStorageLocation(locationId, request);
-      return result.convertedPlacementCount;
-    }, callbacks);
+  const updateLocation = useCallback(
+    (locationId: number, request: StorageLocationRequest) =>
+      runMutation(
+        async () => {
+          const result = await apiClient.updateStorageLocation(locationId, request);
+          return result.convertedPlacementCount;
+        },
+        { setErrorCode, setConvertedPlacementCount, onMutated },
+      ),
+    [onMutated],
+  );
 
   const forgetStatus = useCallback(() => {
     setErrorCode(null);
