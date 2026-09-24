@@ -14,9 +14,15 @@ export interface DuplicatePanelProps {
   wine: WineResponse;
   onMerged: (existingWineId: number) => void;
   onDeleted: () => void;
+  onPlacementsChanged: () => void;
 }
 
-export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProps) {
+export function DuplicatePanel({
+  wine,
+  onMerged,
+  onDeleted,
+  onPlacementsChanged,
+}: DuplicatePanelProps) {
   const [errorCode, setErrorCode] = useState<string | null>(null);
   // Bottles arrive through the placement picker; merging without them answers 409.
   const hasNoBottles = wine.placements.length === 0;
@@ -39,7 +45,7 @@ export function DuplicatePanel({ wine, onMerged, onDeleted }: DuplicatePanelProp
           Bestehenden Eintrag ansehen
         </Link>
       </p>
-      <PlacementSummary wine={wine} changeHref={`/wines/${wine.id}/lagerort`} />
+      <PlacementSummary wine={wine} onChanged={onPlacementsChanged} />
       {errorCode && <ErrorNotice errorCode={errorCode} />}
       <div className="flex flex-wrap gap-2">
         <button

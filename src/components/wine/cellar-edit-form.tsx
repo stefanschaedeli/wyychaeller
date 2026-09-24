@@ -13,9 +13,15 @@ export interface CellarEditFormProps {
   wine: WineResponse;
   onSaved: () => void;
   onCancel: () => void;
+  onPlacementsChanged: () => void;
 }
 
-export function CellarEditForm({ wine, onSaved, onCancel }: CellarEditFormProps) {
+export function CellarEditForm({
+  wine,
+  onSaved,
+  onCancel,
+  onPlacementsChanged,
+}: CellarEditFormProps) {
   const [purchasePriceText, setPurchasePriceText] = useState(
     toInputText(wine.purchasePricePerBottle),
   );
@@ -42,7 +48,7 @@ export function CellarEditForm({ wine, onSaved, onCancel }: CellarEditFormProps)
       <div className="md:col-span-2">
         <PlacementSummary
           wine={wine}
-          changeHref={`/wines/${wine.id}/lagerort`}
+          onChanged={onPlacementsChanged}
           changeLabel="Lagerung ändern"
         />
       </div>

@@ -2,6 +2,13 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.5.0 — 2026-09-24
+
+- The placement picker («Wo liegen die Flaschen?») is an overlay now: it opens right over the current page as soon as the label photo is uploaded, instead of a separate page. Two steps: first a list of large location rows (name, grid size, free slots, and how many bottles of this wine are already placed there) with «Anderer Ort» and «Später festlegen» underneath, then the grid or the bottle count for the chosen location, with «Lagerort wechseln» to go back. A green check bubble in the corner saves at any time and shows the running bottle total; the cross, Escape or a tap outside discards the draft.
+- After saving, the capture page stays open for the next label; the wine waits under «In Arbeit». «Lagerort festlegen», «ändern» and «Lagerung ändern» on the confirmation, duplicate and edit panels open the same overlay in place, and the panel reloads once it is saved.
+- The running summary list with «… entfernen» buttons is gone; bottles are taken away by opening their location and setting the count to 0.
+- The `/wines/{id}/lagerort` page no longer exists.
+
 ## 1.4.0 — 2026-09-23
 
 - Storage locations: Settings → «Lagerorte» manages where bottles live — a simple location (just a name, e.g. «Regal 1») or a grid («Raster») with N rows («Reihe 1…N») and M slots per row, labelled either numbered («Platz 1…M») or as sections («links / rechts» or «links / Mitte / rechts»). A slot holds any number of bottles of any number of wines.

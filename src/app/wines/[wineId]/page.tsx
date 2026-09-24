@@ -79,10 +79,15 @@ function WineDetails({ wineId }: { wineId: number }) {
           wine={wine}
           onMerged={(existingWineId) => router.push(`/wines/${existingWineId}`)}
           onDeleted={goToCellar}
+          onPlacementsChanged={details.reload}
         />
       )}
       {isAwaitingConfirmation && !isDuplicate && (
-        <ConfirmationForm wine={wine} onConfirmed={details.reload} />
+        <ConfirmationForm
+          wine={wine}
+          onConfirmed={details.reload}
+          onPlacementsChanged={details.reload}
+        />
       )}
       {!isAwaitingConfirmation && (
         <AnalysisStatusPanel wine={wine} onChanged={details.reload} onDeleted={goToCellar} />

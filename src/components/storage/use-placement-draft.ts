@@ -6,8 +6,8 @@ import { MAXIMUM_PLACEMENTS_PER_WINE } from "@/domain/constants";
 import type { BottlePlacement, PlacementPosition } from "@/domain/storage-location";
 import { addBottle, canAddPosition, countAt, setCount } from "@/lib/placement-draft";
 import { toDraftPlacements } from "@/lib/placement-requests";
+import type { PlacementTarget } from "@/lib/placement-target";
 import type { BottlePlacementResponse } from "@/shared/api-contract";
-import type { PlacementTarget } from "./location-chips";
 
 export interface SelectedSlot {
   rowIndex: number;
@@ -100,6 +100,8 @@ export interface PlacementDraftState {
   /** True once the draft holds more than the maximum number of distinct placements. */
   hasTooManyPlacements: boolean;
   selectTarget: (target: PlacementTarget) => void;
+  /** Back to the location list; the draft keeps every bottle placed so far. */
+  clearTarget: () => void;
   /** Tapping a grid cell puts one more bottle there and opens the cell's panel. */
   addBottleToSlot: (locationId: number, rowIndex: number, slotIndex: number) => void;
   countAtPosition: (position: PlacementPosition) => number;
@@ -115,6 +117,10 @@ export function usePlacementDraft(placements: BottlePlacementResponse[]): Placem
 
   const selectTarget = useCallback((nextTarget: PlacementTarget) => {
     setTarget(nextTarget);
+    setSelectedSlot(null);
+  }, []);
+  const clearTarget = useCallback(() => {
+    setTarget(null);
     setSelectedSlot(null);
   }, []);
 
@@ -135,6 +141,7 @@ export function usePlacementDraft(placements: BottlePlacementResponse[]): Placem
     totalBottleCount: sumBottles(draft),
     hasTooManyPlacements: draft.length > MAXIMUM_PLACEMENTS_PER_WINE,
     selectTarget,
+    clearTarget,
     addBottleToSlot,
     countAtPosition,
     setCountAtPosition,

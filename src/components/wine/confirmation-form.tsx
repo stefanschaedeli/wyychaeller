@@ -13,9 +13,15 @@ import { IdentityFields, toIdentityFormValues, toIdentityRequest } from "./ident
 export interface ConfirmationFormProps {
   wine: WineResponse;
   onConfirmed: () => void;
+  /** The placements changed in the picker; the caller reloads the wine. */
+  onPlacementsChanged: () => void;
 }
 
-export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
+export function ConfirmationForm({
+  wine,
+  onConfirmed,
+  onPlacementsChanged,
+}: ConfirmationFormProps) {
   const [identityValues, setIdentityValues] = useState(() => toIdentityFormValues(wine));
   const [purchasePriceText, setPurchasePriceText] = useState("");
   const [errorCode, setErrorCode] = useState<string | null>(null);
@@ -44,7 +50,7 @@ export function ConfirmationForm({ wine, onConfirmed }: ConfirmationFormProps) {
       <IdentityFields values={identityValues} onChange={setIdentityValues} />
       <fieldset className="card grid gap-3 md:grid-cols-2">
         <legend className="eyebrow px-1">Im Keller</legend>
-        <PlacementSummary wine={wine} changeHref={`/wines/${wine.id}/lagerort`} />
+        <PlacementSummary wine={wine} onChanged={onPlacementsChanged} />
         <TextField
           label="Kaufpreis pro Flasche"
           value={purchasePriceText}

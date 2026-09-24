@@ -39,7 +39,7 @@ export function SlotGrid(props: SlotGridProps) {
             <p className="eyebrow mb-1">{formatRowLabel(rowIndex)}</p>
             <div
               className="grid gap-1"
-              style={{ gridTemplateColumns: `repeat(${slotsPerRow}, minmax(2.75rem, 1fr))` }}
+              style={{ gridTemplateColumns: `repeat(${slotsPerRow}, minmax(3.25rem, 1fr))` }}
             >
               {buildIndexRange(slotsPerRow).map((slotIndex) => {
                 const slotKey = buildSlotKey(location.id, rowIndex, slotIndex);

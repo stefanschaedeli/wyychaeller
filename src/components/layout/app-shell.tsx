@@ -1,24 +1,27 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, type ReactNode } from "react";
 import { CaptureButton } from "@/components/capture/capture-button";
+import {
+  PlacementOverlayProvider,
+  usePlacementOverlay,
+} from "@/components/storage/placement-overlay-provider";
 import { usePhotoUpload } from "@/lib/use-photo-upload";
 import { notifyWineUploaded } from "@/lib/wine-upload-events";
 import type { WineResponse } from "@/shared/api-contract";
 import { Navigation } from "./navigation";
 
-export function AppShell({ children }: { children: ReactNode }) {
-  const router = useRouter();
+function Shell({ children }: { children: ReactNode }) {
+  const { openPlacementPicker } = usePlacementOverlay();
   // The picker comes first: the wine needs bottles before it can be confirmed.
-  const goToPlacementPicker = useCallback(
+  const openPickerForWine = useCallback(
     (wine: WineResponse) => {
       notifyWineUploaded();
-      router.push(`/wines/${wine.id}/lagerort`);
+      openPlacementPicker({ wineId: wine.id, onSaved: notifyWineUploaded });
     },
-    [router],
+    [openPlacementPicker],
   );
-  const photoUpload = usePhotoUpload(goToPlacementPicker);
+  const photoUpload = usePhotoUpload(openPickerForWine);
 
   return (
     <div className="min-h-dvh md:flex">
@@ -36,5 +39,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         {children}
       </main>
     </div>
+  );
+}
+
+export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <PlacementOverlayProvider>
+      <Shell>{children}</Shell>
+    </PlacementOverlayProvider>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect } from "react";
 import { CaptureButton } from "@/components/capture/capture-button";
 import { PageHeader } from "@/components/layout/page-header";
 import { ErrorNotice } from "@/components/shared/error-notice";
+import { usePlacementOverlay } from "@/components/storage/placement-overlay-provider";
 import { WineList } from "@/components/wine/wine-list";
 import { hasRunningAnalysis } from "@/lib/analysis-polling";
 import { apiClient } from "@/lib/api-client";
@@ -14,7 +14,7 @@ import { subscribeToWineUploaded } from "@/lib/wine-upload-events";
 import type { WineResponse } from "@/shared/api-contract";
 
 export default function CapturePage() {
-  const router = useRouter();
+  const { openPlacementPicker } = usePlacementOverlay();
   const loadWines = useCallback(() => apiClient.listWines({ includeEmpty: true }), []);
   // Polling stops once no wine is pending or analyzing; uploading a new photo (from this
   // page's own button or from the navigation button on any page) calls reload() below,
@@ -24,15 +24,16 @@ export default function CapturePage() {
     shouldPoll: hasRunningAnalysis,
   });
   const { reload } = wineList;
-  // The picker comes first: the wine needs bottles before it can be confirmed.
-  const goToPlacementPicker = useCallback(
+  // The picker opens right over this page, while the user still knows where the bottles
+  // went; once it is saved they are back here for the next label.
+  const openPickerForWine = useCallback(
     (wine: WineResponse) => {
       reload();
-      router.push(`/wines/${wine.id}/lagerort`);
+      openPlacementPicker({ wineId: wine.id, onSaved: reload });
     },
-    [reload, router],
+    [reload, openPlacementPicker],
   );
-  const photoUpload = usePhotoUpload(goToPlacementPicker);
+  const photoUpload = usePhotoUpload(openPickerForWine);
 
   useEffect(() => subscribeToWineUploaded(wineList.reload), [wineList.reload]);
 

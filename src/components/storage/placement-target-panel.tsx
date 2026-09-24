@@ -12,6 +12,8 @@ import { buildSlotKey, SlotGrid } from "./slot-grid";
 import { toPosition, type PlacementDraftState } from "./use-placement-draft";
 
 const OTHER_WINES_HINT = "Hier liegt sonst nichts.";
+const SIMPLE_LOCATION_PROMPT = "Wie viele Flaschen liegen hier?";
+const UNPLACED_PROMPT = "Wie viele Flaschen bleiben vorerst ohne Platz?";
 const ONE_BOTTLE = 1;
 
 export interface PlacementTargetPanelProps {
@@ -70,7 +72,7 @@ function GridTarget(props: PlacementTargetPanelProps & { location: StorageLocati
       : buildSlotKey(location.id, state.selectedSlot.rowIndex, state.selectedSlot.slotIndex);
 
   return (
-    <div className="mt-4">
+    <div>
       <SlotGrid
         location={location}
         occupancy={occupancy}
@@ -98,7 +100,7 @@ function FreeTextTarget({ state }: { state: PlacementDraftState }) {
   }
 
   return (
-    <div className="mt-4 grid max-w-sm gap-3">
+    <div className="grid max-w-sm gap-3">
       <TextField label="Bezeichnung" value={description} onChange={setDescription} />
       <CountStepper value={bottleCount} onChange={setBottleCount} />
       <button type="button" className="button-primary" onClick={addFreeTextPlacement}>
@@ -118,12 +120,22 @@ export function PlacementTargetPanel(props: PlacementTargetPanelProps) {
   }
   const position = toPosition(state.target, state.selectedSlot, false);
   if (position === null) return null;
+  const isSimpleLocation = location !== null;
   return (
-    <div className="mt-4">
+    <div className="grid gap-3">
+      <p>{isSimpleLocation ? SIMPLE_LOCATION_PROMPT : UNPLACED_PROMPT}</p>
       <CountStepper
         value={state.countAtPosition(position)}
         onChange={(count) => state.setCountAtPosition(position, count)}
       />
+      {isSimpleLocation && (
+        <div className="mt-2 border-t border-line pt-3">
+          <PlacementWineList
+            placements={props.occupancy.get(buildPlacementKey(position))?.placements ?? []}
+            emptyHint={OTHER_WINES_HINT}
+          />
+        </div>
+      )}
     </div>
   );
 }

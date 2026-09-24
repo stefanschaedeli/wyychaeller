@@ -10,6 +10,7 @@
   --color-bordeaux-dark: #5f212c;
   --color-gold: #b79b6c;
   --color-alert: #9a3b12;
+  --color-success: #3b7a57;
 
   --font-serif: var(--font-garamond), Georgia, "Times New Roman", serif;
   --font-sans: var(--font-inter), system-ui, sans-serif;
@@ -51,5 +52,27 @@
   }
   .field-input {
     @apply w-full min-h-11 bg-card border border-line rounded-xs px-3 font-serif text-base text-ink focus:border-bordeaux;
+  }
+}
+
+@keyframes overlay-rise {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@layer components {
+  .overlay-panel {
+    animation: overlay-rise 220ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .overlay-panel {
+      animation: none;
+    }
   }
 }

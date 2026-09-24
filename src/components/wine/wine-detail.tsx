@@ -90,6 +90,7 @@ export function WineDetail({ wine, tastings, currency, onChanged, onDeleted }: W
           wine={wine}
           onSaved={closePanelAndReload}
           onCancel={() => setOpenPanel("none")}
+          onPlacementsChanged={onChanged}
         />
       )}
       <WineAssessment wine={wine} currency={currency} />

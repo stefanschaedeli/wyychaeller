@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.describe.configure({ mode: "serial" });
 
@@ -44,6 +44,11 @@ test("creates storage locations", async ({ page }) => {
 
 const LABEL_FIXTURE = "e2e/fixtures/label.jpg";
 
+/** The capture page lists the wine that was just photographed under «In Arbeit». */
+async function openWineInProgress(page: Page) {
+  await page.locator("section", { hasText: "In Arbeit" }).getByRole("link").first().click();
+}
+
 test("captures a wine from a label photo and confirms it", async ({ page }) => {
   await page.goto("/capture");
   await page.getByLabel("Etikett fotografieren").first().setInputFiles(LABEL_FIXTURE);
@@ -54,6 +59,10 @@ test("captures a wine from a label photo and confirms it", async ({ page }) => {
   await page.getByLabel("Anzahl Flaschen").fill("6");
   await page.getByRole("button", { name: "Fertig" }).click();
 
+  // Saving closes the overlay and leaves the user on the capture page for the next label.
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Etikett fotografieren" })).toBeVisible();
+  await openWineInProgress(page);
   await expect(page.getByRole("heading", { name: "Stimmt das so?" })).toBeVisible({
     timeout: 15_000,
   });
@@ -103,17 +112,22 @@ test("moves the bottles to another storage location", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("link", { name: /Tignanello 2018/ }).click();
   await page.getByRole("button", { name: "Bearbeiten" }).click();
-  await page.getByRole("link", { name: "Lagerung ändern" }).click();
+  await page.getByRole("button", { name: "Lagerung ändern" }).click();
 
   await expect(page.getByRole("heading", { name: "Wo liegen die Flaschen?" })).toBeVisible();
-  await page.getByRole("button", { name: "Weinschrank, Reihe 2, links entfernen" }).click();
-  await page.getByRole("button", { name: /^Regal 1/ }).click();
+  await page.getByRole("button", { name: "Weinschrank" }).click();
+  await page.getByRole("button", { name: /^Reihe 2, links/ }).click();
+  await page.getByLabel("Anzahl Flaschen").fill("0");
+  await page.getByRole("button", { name: "Lagerort wechseln" }).click();
+  await page.getByRole("button", { name: "Regal 1" }).click();
   await page.getByLabel("Anzahl Flaschen").fill("5");
   await page.getByRole("button", { name: "Fertig" }).click();
 
+  await expect(page.getByRole("dialog")).toBeHidden();
+
   await expect(page.getByRole("heading", { name: "Tignanello 2018" })).toBeVisible();
-  await expect(page.getByText("Regal 1")).toBeVisible();
-  await expect(page.getByText("5 Flaschen")).toBeVisible();
+  // The edit panel stays open and shows the reloaded placements.
+  await expect(page.getByText("5 Flaschen · Regal 1", { exact: true })).toBeVisible();
 });
 
 test("lists nothing urgent for a young cellar", async ({ page }) => {
@@ -159,10 +173,12 @@ test("recognises a wine that is already in the cellar and merges the bottles", a
   await page.getByLabel("Etikett fotografieren").first().setInputFiles(LABEL_FIXTURE);
 
   await expect(page.getByRole("heading", { name: "Wo liegen die Flaschen?" })).toBeVisible();
-  await page.getByRole("button", { name: /^Regal 1/ }).click();
+  await page.getByRole("button", { name: "Regal 1" }).click();
   await page.getByLabel("Anzahl Flaschen").fill("3");
   await page.getByRole("button", { name: "Fertig" }).click();
 
+  await expect(page.getByRole("dialog")).toBeHidden();
+  await openWineInProgress(page);
   await expect(page.getByRole("heading", { name: "Schon im Keller" })).toBeVisible({
     timeout: 15_000,
   });
