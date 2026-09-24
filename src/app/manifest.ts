@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
+import { APP_TITLE } from "@/domain/constants";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Weinkeller",
-    short_name: "Weinkeller",
+    name: APP_TITLE,
+    short_name: APP_TITLE,
     description: "Der eigene Weinkeller: erfassen, bewerten, rechtzeitig geniessen.",
     lang: "de-CH",
     start_url: "/",

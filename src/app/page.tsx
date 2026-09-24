@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ErrorNotice } from "@/components/shared/error-notice";
 import { CellarFilters } from "@/components/wine/cellar-filters";
 import { WineList } from "@/components/wine/wine-list";
+import { APP_TITLE } from "@/domain/constants";
 import type { DrinkingMaturity, WineType } from "@/domain/wine-types";
 import { hasRunningAnalysis } from "@/lib/analysis-polling";
 import { apiClient } from "@/lib/api-client";
@@ -54,7 +55,7 @@ export default function CellarPage() {
 
   return (
     <>
-      <PageHeader eyebrow={`Mein Keller · ${formatBottleCount(totalBottles)}`} title="Weinkeller" />
+      <PageHeader eyebrow={`Mein Keller · ${formatBottleCount(totalBottles)}`} title={APP_TITLE} />
       <DrinkSoonTeaser />
       <CellarFilters
         searchText={searchText}

@@ -1,3 +1,6 @@
+/** The app's name as shown in the browser tab, on the home screen and in the shell. */
+export const APP_TITLE = "WEINKELLER";
+
 /** A wine counts as "drink soon" during the last N years of its drinking window. */
 export const DRINK_SOON_WINDOW_YEARS = 2;
 

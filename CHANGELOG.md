@@ -2,6 +2,10 @@
 
 Versions follow `MAJOR.MINOR.PATCH`: PATCH for fixes, MINOR for new features, MAJOR for releases that need a manual migration or that the owner declares major.
 
+## 1.5.1 — 2026-09-24
+
+- The app title is written in capitals everywhere: «WEINKELLER» in the browser tab, on the home screen (manifest), in the sidebar and as the home page heading.
+
 ## 1.5.0 — 2026-09-24
 
 - The placement picker («Wo liegen die Flaschen?») is an overlay now: it opens right over the current page as soon as the label photo is uploaded, instead of a separate page. Two steps: first a list of large location rows (name, grid size, free slots, and how many bottles of this wine are already placed there) with «Anderer Ort» and «Später festlegen» underneath, then the grid or the bottle count for the chosen location, with «Lagerort wechseln» to go back. A green check bubble in the corner saves at any time and shows the running bottle total; the cross, Escape or a tap outside discards the draft.

@@ -6,7 +6,7 @@ describe("web app manifest", () => {
   it("describes an installable standalone app in German", () => {
     const webManifest = manifest();
 
-    expect(webManifest.name).toBe("Weinkeller");
+    expect(webManifest.name).toBe("WEINKELLER");
     expect(webManifest.lang).toBe("de-CH");
     expect(webManifest.display).toBe("standalone");
     expect(webManifest.start_url).toBe("/");

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { APP_TITLE } from "@/domain/constants";
 
 const NAVIGATION_LINKS = [
   { href: "/", label: "Keller" },
@@ -38,7 +39,7 @@ export function Navigation({ captureControl }: { captureControl: ReactNode }) {
       aria-label="Hauptnavigation"
       className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-around border-t border-ink bg-paper pb-[env(safe-area-inset-bottom)] md:sticky md:top-0 md:h-dvh md:w-52 md:flex-col md:items-stretch md:justify-start md:gap-1 md:border-r md:border-t-0 md:p-6"
     >
-      <p className="hidden text-2xl italic md:mb-6 md:block">Weinkeller</p>
+      <p className="hidden text-2xl italic md:mb-6 md:block">{APP_TITLE}</p>
       <NavigationLink {...cellarLink} />
       <NavigationLink {...soonLink} />
       <div className="md:order-last md:mt-6 md:flex md:justify-center">{captureControl}</div>

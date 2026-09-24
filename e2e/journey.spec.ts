@@ -5,7 +5,7 @@ test.describe.configure({ mode: "serial" });
 test("shows the German shell with navigation", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("Weinkeller");
+  await expect(page).toHaveTitle("WEINKELLER");
   await expect(page.locator("html")).toHaveAttribute("lang", "de-CH");
   for (const linkName of ["Keller", "Bald", "Essen", "Mehr"]) {
     await expect(page.getByRole("link", { name: linkName, exact: true })).toBeVisible();
@@ -212,6 +212,6 @@ test("serves a web app manifest for installation", async ({ page }) => {
   const manifestResponse = await page.request.get("/manifest.webmanifest");
   const webManifest = await manifestResponse.json();
 
-  expect(webManifest.name).toBe("Weinkeller");
+  expect(webManifest.name).toBe("WEINKELLER");
   expect(webManifest.display).toBe("standalone");
 });
